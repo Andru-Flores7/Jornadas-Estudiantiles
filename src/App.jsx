@@ -8,7 +8,11 @@ const createInitialJurorState = () => ({
   juegos: Array(3).fill(null),
   popurri: Array(10).fill(null),
   mascota: Array(4).fill(null),
-  ritmos: {
+  ritmo1: {
+    A: { vestimenta: '', originalidad: '', coordinacion: '', energia: '', espacio: '' },
+    B: { vestimenta: '', originalidad: '', coordinacion: '', energia: '', espacio: '' }
+  },
+  ritmo2: {
     A: { vestimenta: '', originalidad: '', coordinacion: '', energia: '', espacio: '' },
     B: { vestimenta: '', originalidad: '', coordinacion: '', energia: '', espacio: '' }
   },
@@ -127,13 +131,30 @@ const JurorView = ({ role, data, setData, onSave, onBack, isSyncing }) => {
     const ptsJuegosB = data.juegos.filter(v => v === 'B').length * 6;
     const countPopA = data.popurri.filter(v => v === 'A').length, countPopB = data.popurri.filter(v => v === 'B').length;
     const prizePopA = countPopA > countPopB ? 4 : 0, prizePopB = countPopB > countPopA ? 4 : 0;
-    const sumRitA = Object.values(data.ritmos.A).reduce((acc, val) => acc + (Number(val) || 0), 0);
-    const sumRitB = Object.values(data.ritmos.B).reduce((acc, val) => acc + (Number(val) || 0), 0);
-    const prizeRitA = (sumRitA > sumRitB && sumRitA > 0) ? 4 : 0, prizeRitB = (sumRitB > sumRitA && sumRitB > 0) ? 4 : 0;
+    const sumR1A = Object.values(data.ritmo1.A).reduce((acc, val) => acc + (Number(val) || 0), 0);
+    const sumR1B = Object.values(data.ritmo1.B).reduce((acc, val) => acc + (Number(val) || 0), 0);
+    const prizeR1A = (sumR1A > sumR1B && sumR1A > 0) ? 4 : 0, prizeR1B = (sumR1B > sumR1A && sumR1B > 0) ? 4 : 0;
+    const sumR2A = Object.values(data.ritmo2.A).reduce((acc, val) => acc + (Number(val) || 0), 0);
+    const sumR2B = Object.values(data.ritmo2.B).reduce((acc, val) => acc + (Number(val) || 0), 0);
+    const prizeR2A = (sumR2A > sumR2B && sumR2A > 0) ? 4 : 0, prizeR2B = (sumR2B > sumR2A && sumR2B > 0) ? 4 : 0;
     const sumVidA = Object.values(data.videoclip.A).reduce((acc, val) => acc + (Number(val) || 0), 0);
     const sumVidB = Object.values(data.videoclip.B).reduce((acc, val) => acc + (Number(val) || 0), 0);
     const prizeVidA = (sumVidA > sumVidB && sumVidA > 0) ? 15 : 0, prizeVidB = (sumVidB > sumVidA && sumVidB > 0) ? 15 : 0;
-    return { ptsJuegosA, ptsJuegosB, prizePopA, prizePopB, sumRitA, sumRitB, prizeRitA, prizeRitB, sumVidA, sumVidB, prizeVidA, prizeVidB, totalA: ptsJuegosA + prizePopA + prizeRitA + prizeVidA, totalB: ptsJuegosB + prizePopB + prizeRitB + prizeVidB };
+    
+    const countMasA = data.mascota.filter(v => v === 'A').length, countMasB = data.mascota.filter(v => v === 'B').length;
+    const prizeMasA = countMasA > countMasB ? 4 : 0, prizeMasB = countMasB > countMasA ? 4 : 0;
+
+    return { 
+      ptsJuegosA, ptsJuegosB, 
+      prizePopA, prizePopB, 
+      prizeMasA, prizeMasB,
+      prizeR1A, prizeR1B, 
+      prizeR2A, prizeR2B, 
+      sumVidA, sumVidB, 
+      prizeVidA, prizeVidB, 
+      totalA: ptsJuegosA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeVidA, 
+      totalB: ptsJuegosB + prizePopB + prizeMasB + prizeR1B + prizeR2B + prizeVidB 
+    };
   }, [data]);
 
   const handleScoreChange = (section, team, criterion, value, max) => {
@@ -143,40 +164,91 @@ const JurorView = ({ role, data, setData, onSave, onBack, isSyncing }) => {
   };
 
   return (
-    <div className="container-fluid py-4 bg-light min-vh-100 pb-5">
-      <div className="d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded shadow-sm">
-        <button className="btn btn-outline-secondary btn-sm" onClick={onBack}>← Volver</button>
-        <h5 className="m-0 fw-bold">PLANILLA JURADO {role.slice(-1)}</h5>
-        <div className="badge bg-success">{isSyncing ? 'Guardando...' : 'En la Nube'}</div>
+    <div className="container-fluid py-4 min-vh-100 pb-5">
+      <div className="card d-flex flex-row justify-content-between align-items-center mb-4 p-3 border-0">
+        <button className="btn btn-sm btn-outline-light opacity-75" onClick={onBack}>
+          <span className="me-1">←</span> Volver
+        </button>
+        <h5 className="m-0 fw-bold text-uppercase tracking-wider">
+          <span className="text-primary">Planilla</span> Jurado {role.slice(-1)}
+        </h5>
+        <div className="badge bg-success">{isSyncing ? 'Sincronizando...' : 'Conectado'}</div>
       </div>
 
-      <header className="card shadow-sm border-0 mb-4 p-4 text-white bg-primary">
-        <div className="row g-3">
-          <div className="col-md-2"><label className="form-label small fw-bold">Encuentro N°</label><input type="number" className="form-control" value={data.header.matchNo} onChange={(e) => setData({...data, header: {...data.header, matchNo: e.target.value}})} /></div>
-          <div className="col-md-5"><label className="form-label small fw-bold">Equipo A</label><input type="text" className="form-control" value={data.header.teamA} onChange={(e) => setData({...data, header: {...data.header, teamA: e.target.value}})} /></div>
-          <div className="col-md-5"><label className="form-label small fw-bold">Equipo B</label><input type="text" className="form-control" value={data.header.teamB} onChange={(e) => setData({...data, header: {...data.header, teamB: e.target.value}})} /></div>
+      <header className="card border-0 mb-4 p-4 text-white" style={{ background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(186, 139, 2, 0.15))', backdropFilter: 'blur(10px)' }}>
+        <div className="row g-4 align-items-end">
+          <div className="col-md-2">
+            <label className="form-label small text-uppercase fw-bold opacity-75 mb-2">Encuentro</label>
+            <input type="number" className="form-control form-control-lg text-center" value={data.header.matchNo} onChange={(e) => setData({...data, header: {...data.header, matchNo: e.target.value}})} />
+          </div>
+          <div className="col-md-5">
+            <label className="form-label small text-uppercase fw-bold opacity-75 mb-2">Equipo A</label>
+            <input type="text" className="form-control form-control-lg" value={data.header.teamA} onChange={(e) => setData({...data, header: {...data.header, teamA: e.target.value}})} />
+          </div>
+          <div className="col-md-5">
+            <label className="form-label small text-uppercase fw-bold opacity-75 mb-2">Equipo B</label>
+            <input type="text" className="form-control form-control-lg" value={data.header.teamB} onChange={(e) => setData({...data, header: {...data.header, teamB: e.target.value}})} />
+          </div>
         </div>
       </header>
 
       <main className="row g-4">
         {/* JUEGOS */}
-        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header bg-dark text-white fw-bold">JUEGOS (6 pts c/u)</div><div className="card-body p-0"><table className="table table-bordered text-center m-0"><thead><tr><th>Juego</th><th>{data.header.teamA}</th><th>{data.header.teamB}</th></tr></thead><tbody>{[0, 1, 2].map(i => (<tr key={i}><td>#{i+1}</td><td><button className={`btn btn-lg ${data.juegos[i]==='A'?'btn-success':'btn-light'}`} onClick={()=>{const n=[...data.juegos];n[i]=n[i]==='A'?null:'A';setData({...data,juegos:n})}}>X</button></td><td><button className={`btn btn-lg ${data.juegos[i]==='B'?'btn-success':'btn-light'}`} onClick={()=>{const n=[...data.juegos];n[i]=n[i]==='B'?null:'B';setData({...data,juegos:n})}}>X</button></td></tr>))}</tbody></table></div></div></section>
+        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header text-white fw-bold">JUEGOS (6 pts c/u)</div><div className="card-body p-0"><table className="table table-bordered text-center m-0"><thead><tr><th>Juego</th><th>{data.header.teamA}</th><th>{data.header.teamB}</th></tr></thead><tbody>{[0, 1, 2].map(i => (<tr key={i}><td>#{i+1}</td><td><button className={`btn btn-lg ${data.juegos[i]==='A'?'btn-success':'btn-light'}`} onClick={()=>{const n=[...data.juegos];n[i]=n[i]==='A'?null:'A';setData({...data,juegos:n})}}>X</button></td><td><button className={`btn btn-lg ${data.juegos[i]==='B'?'btn-success':'btn-light'}`} onClick={()=>{const n=[...data.juegos];n[i]=n[i]==='B'?null:'B';setData({...data,juegos:n})}}>X</button></td></tr>))}</tbody></table></div></div></section>
         {/* POPURRI */}
-        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header bg-dark text-white fw-bold">POPURRÍ (Premio: 4 pts)</div><div className="card-body p-0 overflow-auto"><table className="table table-bordered text-center m-0"><thead><tr><th>Equipo</th>{[...Array(10)].map((_,i)=><th key={i}>{i+1}</th>)}<th>Premio</th></tr></thead><tbody>{['A', 'B'].map(team => (<tr key={team}><td>{team==='A'?data.header.teamA:data.header.teamB}</td>{data.popurri.map((v, i)=>(<td key={i}><button className={`btn btn-sm ${v===team?'btn-primary':'btn-light'}`} style={{width:'30px'}} onClick={()=>{const n=[...data.popurri];n[i]=n[i]===team?null:team;setData({...data,popurri:n})}}>X</button></td>))}<td className="fw-bold">{team==='A'?calc.prizePopA:calc.prizePopB}</td></tr>))}</tbody></table></div></div></section>
-        {/* RITMOS */}
-        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header bg-dark text-white fw-bold">RITMOS (1-5 pts | Premio: 4 pts)</div><div className="card-body"><div className="row g-4">{['A', 'B'].map(team => (<div className="col-md-6" key={team}><h6>{team==='A'?data.header.teamA:data.header.teamB}</h6><table className="table table-sm table-bordered text-center"><tbody>{['vestimenta','originalidad','coordinacion','energia','espacio'].map(c=>(<tr key={c}><td className="text-start small">{c}</td><td><input type="number" className="form-control form-control-sm text-center mx-auto" value={data.ritmos[team][c]} onChange={(e)=>handleScoreChange('ritmos',team,c,e.target.value,5)} /></td></tr>))}<tr className="table-warning"><td>Suma</td><td>{team==='A'?calc.sumRitA:calc.sumRitB}</td></tr><tr className="table-success"><td>Premio</td><td>{team==='A'?calc.prizeRitA:calc.prizeRitB}</td></tr></tbody></table></div>))}</div></div></div></section>
+        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header text-white fw-bold">POPURRÍ (Premio: 4 pts)</div><div className="card-body p-0 overflow-auto"><table className="table table-bordered text-center m-0"><thead><tr><th>Equipo</th>{[...Array(10)].map((_,i)=><th key={i}>{i+1}</th>)}<th>Premio</th></tr></thead><tbody>{['A', 'B'].map(team => (<tr key={team}><td>{team==='A'?data.header.teamA:data.header.teamB}</td>{data.popurri.map((v, i)=>(<td key={i}><button className={`btn btn-sm ${v===team?'btn-primary':'btn-light'}`} style={{width:'30px'}} onClick={()=>{const n=[...data.popurri];n[i]=n[i]===team?null:team;setData({...data,popurri:n})}}>X</button></td>))}<td className="fw-bold">{team==='A'?calc.prizePopA:calc.prizePopB}</td></tr>))}</tbody></table></div></div></section>
+        
+        {/* POPURRI ALTERNATIVO DE LA MASCOTA */}
+        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header text-white fw-bold">POPURRÍ ALTERNATIVO DE LA MASCOTA (Premio: 4 pts)</div><div className="card-body p-0 overflow-auto"><table className="table table-bordered text-center m-0"><thead><tr><th>Equipo</th>{[...Array(4)].map((_,i)=><th key={i}>{i+1}</th>)}<th>Premio</th></tr></thead><tbody>{['A', 'B'].map(team => (<tr key={team}><td>{team==='A'?data.header.teamA:data.header.teamB}</td>{data.mascota.map((v, i)=>(<td key={i}><button className={`btn btn-sm ${v===team?'btn-primary':'btn-light'}`} style={{width:'30px'}} onClick={()=>{const n=[...data.mascota];n[i]=n[i]===team?null:team;setData({...data,mascota:n})}}>X</button></td>))}<td className="fw-bold">{team==='A'?calc.prizeMasA:calc.prizeMasB}</td></tr>))}</tbody></table></div></div></section>
+        {/* RITMOS (DOS TABLAS) */}
+        {['ritmo1', 'ritmo2'].map((rit, idx) => (
+          <section className="col-lg-6" key={rit}>
+            <div className="card shadow-sm border-0">
+              <div className="card-header text-white fw-bold">RITMO {idx + 1} (1-5 pts | Premio: 4 pts)</div>
+              <div className="card-body">
+                <div className="row g-3">
+                  {['A', 'B'].map(team => (
+                    <div className="col-6" key={team}>
+                      <h6 className="small text-uppercase fw-bold opacity-75">{team === 'A' ? data.header.teamA : data.header.teamB}</h6>
+                      <table className="table table-sm table-bordered text-center">
+                        <tbody>
+                          {['vestimenta', 'originalidad', 'desplazamiento', 'coordinacion', 'conexion en pareja'].map(c => (
+                            <tr key={c}>
+                              <td className="text-start small opacity-75">{c}</td>
+                              <td><input type="number" className="form-control form-control-sm text-center mx-auto" value={data[rit][team][c]} onChange={(e) => handleScoreChange(rit, team, c, e.target.value, 5)} /></td>
+                            </tr>
+                          ))}
+                          <tr className="table-warning"><td>Suma</td><td>{Object.values(data[rit][team]).reduce((a,v)=>a+(Number(v)||0),0)}</td></tr>
+                          <tr className="table-success"><td>Premio</td><td>{team === 'A' ? (idx === 0 ? calc.prizeR1A : calc.prizeR2A) : (idx === 0 ? calc.prizeR1B : calc.prizeR2B)}</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        ))}
         {/* VIDEOCLIP */}
-        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header bg-dark text-white fw-bold">VIDEOCLIP (1-8 pts | Premio: 15 pts)</div><div className="card-body"><div className="row g-4">{['A', 'B'].map(team => (<div className="col-md-6" key={team}><h6>{team==='A'?data.header.teamA:data.header.teamB}</h6><table className="table table-sm table-bordered text-center"><tbody>{[{k:'edicion',l:'Edición'},{k:'actuacion',l:'Actuación'},{k:'escenografía',l:'Escenografía'},{k:'creatividad',l:'Creatividad'},{k:'calidad',l:'Calidad'},{k:'mensaje',l:'Mensaje'}].map(c=>(<tr key={c.k}><td className="text-start small">{c.l}</td><td><input type="number" className="form-control form-control-sm text-center mx-auto" value={data.videoclip[team][c.k]} onChange={(e)=>handleScoreChange('videoclip',team,c.k,e.target.value,8)} /></td></tr>))}<tr className="table-warning"><td>Suma</td><td>{team==='A'?calc.sumVidA:calc.sumVidB}</td></tr><tr className="table-success"><td>Premio</td><td>{team==='A'?calc.prizeVidA:calc.prizeVidB}</td></tr></tbody></table></div>))}</div></div></div></section>
+        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header text-white fw-bold">VIDEOCLIP (1-8 pts | Premio: 15 pts)</div><div className="card-body"><div className="row g-4">{['A', 'B'].map(team => (<div className="col-md-6" key={team}><h6>{team==='A'?data.header.teamA:data.header.teamB}</h6><table className="table table-sm table-bordered text-center"><tbody>{[{k:'cordinacion coreografica',l:'Coordinación coreográfica'},{k:'composicion coreografica',l:'composicion coreografica'},{k:'adaptacion al tiempo musical',l:'Adaptación al tiempo musical'},{k:'uso del espacio',l:'Uso del espacio'},{k:'impacto visual',l:'Impacto visual'},{k:'carisma',l:'Carisma'}].map(c=>(<tr key={c.k}><td className="text-start small">{c.l}</td><td><input type="number" className="form-control form-control-sm text-center mx-auto" value={data.videoclip[team][c.k]} onChange={(e)=>handleScoreChange('videoclip',team,c.k,e.target.value,8)} /></td></tr>))}<tr className="table-warning"><td>Suma</td><td>{team==='A'?calc.sumVidA:calc.sumVidB}</td></tr><tr className="table-success"><td>Premio</td><td>{team==='A'?calc.prizeVidA:calc.prizeVidB}</td></tr></tbody></table></div>))}</div></div></div></section>
       </main>
 
-      <footer className="fixed-bottom py-2 px-3 bg-white border-top shadow-lg">
+      <footer className="fixed-bottom py-3 px-4">
         <div className="container-fluid d-flex justify-content-between align-items-center">
-          <div className="d-flex gap-3">
-            <span className="small fw-bold">{data.header.teamA}: <span className="text-primary">{calc.totalA}</span></span>
-            <div className="vr"></div>
-            <span className="small fw-bold">{data.header.teamB}: <span className="text-primary">{calc.totalB}</span></span>
+          <div className="d-flex gap-4 align-items-center">
+            <div className="text-center">
+              <div className="small text-uppercase opacity-50 fw-bold" style={{ fontSize: '0.65rem' }}>{data.header.teamA}</div>
+              <div className="h5 m-0 fw-bold text-primary">{calc.totalA}</div>
+            </div>
+            <div className="vr h-100 opacity-25"></div>
+            <div className="text-center">
+              <div className="small text-uppercase opacity-50 fw-bold" style={{ fontSize: '0.65rem' }}>{data.header.teamB}</div>
+              <div className="h5 m-0 fw-bold text-primary">{calc.totalB}</div>
+            </div>
           </div>
-          <button className="btn btn-success fw-bold py-1 px-4" onClick={onSave}>🚀 ENVIAR</button>
+          <button className="btn btn-success px-5 py-2 fw-bold shadow-sm" onClick={onSave}>
+            🚀 ENVIAR RESULTADOS
+          </button>
         </div>
       </footer>
     </div>
@@ -193,11 +265,15 @@ const AdminView = ({ db, onBack, onReset }) => {
     const ptsA = data.juegos.filter(v => v === 'A').length * 6, ptsB = data.juegos.filter(v => v === 'B').length * 6;
     const popA = data.popurri.filter(v => v === 'A').length > data.popurri.filter(v => v === 'B').length ? 4 : 0;
     const popB = data.popurri.filter(v => v === 'B').length > data.popurri.filter(v => v === 'A').length ? 4 : 0;
-    const ritA = Object.values(data.ritmos.A).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.ritmos.B).reduce((acc,v)=>acc+(Number(v)||0),0) ? 4 : 0;
-    const ritB = Object.values(data.ritmos.B).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.ritmos.A).reduce((acc,v)=>acc+(Number(v)||0),0) ? 4 : 0;
+    const masA = data.mascota.filter(v => v === 'A').length > data.mascota.filter(v => v === 'B').length ? 4 : 0;
+    const masB = data.mascota.filter(v => v === 'B').length > data.mascota.filter(v => v === 'A').length ? 4 : 0;
+    const r1A = Object.values(data.ritmo1.A).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.ritmo1.B).reduce((acc,v)=>acc+(Number(v)||0),0) ? 4 : 0;
+    const r1B = Object.values(data.ritmo1.B).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.ritmo1.A).reduce((acc,v)=>acc+(Number(v)||0),0) ? 4 : 0;
+    const r2A = Object.values(data.ritmo2.A).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.ritmo2.B).reduce((acc,v)=>acc+(Number(v)||0),0) ? 4 : 0;
+    const r2B = Object.values(data.ritmo2.B).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.ritmo2.A).reduce((acc,v)=>acc+(Number(v)||0),0) ? 4 : 0;
     const vidA = Object.values(data.videoclip.A).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.videoclip.B).reduce((acc,v)=>acc+(Number(v)||0),0) ? 15 : 0;
     const vidB = Object.values(data.videoclip.B).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.videoclip.A).reduce((acc,v)=>acc+(Number(v)||0),0) ? 15 : 0;
-    return { a: ptsA + popA + ritA + vidA, b: ptsB + popB + ritB + vidB };
+    return { a: ptsA + popA + masA + r1A + r2A + vidA, b: ptsB + popB + masB + r1B + r2B + vidB };
   };
 
   const jurors = [{id:'juror1',label:'Jurado 1'},{id:'juror2',label:'Jurado 2'},{id:'juror3',label:'Jurado 3'}];
@@ -212,13 +288,19 @@ const AdminView = ({ db, onBack, onReset }) => {
       <div className="row g-4 mb-5">
         {jurors.map(j => (<div className="col-md-4" key={j.id}><div className={`card shadow-sm border-0 p-3 text-center ${db[j.id]?.submitted ? 'border-top border-success border-4':'opacity-50'}`}><h6>{j.label}</h6><b>{teamA}: {db[j.id]?calculateFinal(db[j.id]).a:'-'} | {teamB}: {db[j.id]?calculateFinal(db[j.id]).b:'-'}</b></div></div>))}
       </div>
-      <div className="card shadow-lg bg-dark text-white p-5 text-center border-0" style={{borderRadius:'30px'}}>
+      <div className="card shadow-lg bg-dark bg-opacity-75 text-white p-5 text-center border-0 backdrop-blur" style={{borderRadius:'30px'}}>
         <div className="row justify-content-center align-items-center">
           <div className="col-md-5"><div className="display-1 fw-bold text-info">{avgA}</div><h4 className="text-uppercase">{teamA}</h4></div>
           <div className="col-md-2 display-4 opacity-25">VS</div>
           <div className="col-md-5"><div className="display-1 fw-bold text-info">{avgB}</div><h4 className="text-uppercase">{teamB}</h4></div>
         </div>
-        <div className="mt-4 p-3 bg-success rounded-pill d-inline-block px-5"><h2>GANADOR: {Number(avgA) > Number(avgB) ? teamA : teamB}</h2></div>
+        <div className="mt-5">
+          <div className="winner-badge shadow-lg">
+            <h2 className="m-0 fw-bolder text-uppercase tracking-tighter">
+              🏆 GANADOR: {Number(avgA) === Number(avgB) ? 'EMPATE' : (Number(avgA) > Number(avgB) ? teamA : teamB)}
+            </h2>
+          </div>
+        </div>
       </div>
     </div>
   );

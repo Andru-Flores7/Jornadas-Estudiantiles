@@ -153,7 +153,16 @@ const JurorView = ({ role, data, setData, onSave, onBack, isSyncing }) => {
         <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header bg-dark text-white fw-bold">VIDEOCLIP (1-8 pts | Premio: 15 pts)</div><div className="card-body"><div className="row g-4">{['A', 'B'].map(team => (<div className="col-md-6" key={team}><h6>{team==='A'?data.header.teamA:data.header.teamB}</h6><table className="table table-sm table-bordered text-center"><tbody>{[{k:'edicion',l:'Edición'},{k:'actuacion',l:'Actuación'},{k:'escenografía',l:'Escenografía'},{k:'creatividad',l:'Creatividad'},{k:'calidad',l:'Calidad'},{k:'mensaje',l:'Mensaje'}].map(c=>(<tr key={c.k}><td className="text-start small">{c.l}</td><td><input type="number" className="form-control form-control-sm text-center mx-auto" value={data.videoclip[team][c.k]} onChange={(e)=>handleScoreChange('videoclip',team,c.k,e.target.value,8)} /></td></tr>))}<tr className="table-warning"><td>Suma</td><td>{team==='A'?calc.sumVidA:calc.sumVidB}</td></tr><tr className="table-success"><td>Premio</td><td>{team==='A'?calc.prizeVidA:calc.prizeVidB}</td></tr></tbody></table></div>))}</div></div></div></section>
       </main>
 
-      <footer className="fixed-bottom p-3 bg-white border-top shadow-lg"><div className="container d-flex justify-content-between align-items-center"><div><h6>{data.header.teamA}: <span className="h4 text-primary">{calc.totalA}</span></h6><h6>{data.header.teamB}: <span className="h4 text-primary">{calc.totalB}</span></h6></div><button className="btn btn-success btn-lg fw-bold" onClick={onSave}>🚀 ENVIAR</button></div></footer>
+      <footer className="fixed-bottom py-2 px-3 bg-white border-top shadow-lg">
+        <div className="container-fluid d-flex justify-content-between align-items-center">
+          <div className="d-flex gap-3">
+            <span className="small fw-bold">{data.header.teamA}: <span className="text-primary">{calc.totalA}</span></span>
+            <div className="vr"></div>
+            <span className="small fw-bold">{data.header.teamB}: <span className="text-primary">{calc.totalB}</span></span>
+          </div>
+          <button className="btn btn-success fw-bold py-1 px-4" onClick={onSave}>🚀 ENVIAR</button>
+        </div>
+      </footer>
     </div>
   );
 };

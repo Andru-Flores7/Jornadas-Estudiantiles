@@ -37,10 +37,26 @@ const App = () => {
 
     const channel = supabase.channel('jornadas_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'jornadas_scores' }, (payload) => {
-        setDb(prev => ({ ...prev, [payload.new.juror_id]: payload.new.payload }));
+        const newJurorId = payload.new.juror_id;
+        const newPayload = payload.new.payload;
+
+        setDb(prev => ({ ...prev, [newJurorId]: newPayload }));
+
+        // Sincronizar cabecera entre jurados
+        if (role && role !== 'admin' && newJurorId !== role) {
+          setJurorData(prev => ({
+            ...prev,
+            header: {
+              ...prev.header,
+              teamA: newPayload.header.teamA || prev.header.teamA,
+              teamB: newPayload.header.teamB || prev.header.teamB,
+              matchNo: newPayload.header.matchNo || prev.header.matchNo
+            }
+          }));
+        }
       }).subscribe();
     return () => supabase.removeChannel(channel);
-  }, []);
+  }, [role]);
 
   const syncToSupabase = async (newData) => {
     if (!role || role === 'admin') return;

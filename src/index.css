@@ -1,0 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+:root {
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9fa;
+  color: #212529;
+}
+
+.card {
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
+}
+
+.card-header {
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+input[type="number"] {
+  max-width: 80px;
+  margin: 0 auto;
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.sticky-bottom {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 1020;
+}
+
+/* Custom styles for the Popurri/Mascota "X" buttons */
+.btn-outline-light.text-muted:hover {
+  background-color: #e9ecef;
+  color: #212529 !important;
+}
+
+/* Hide number input arrows */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.display-6 {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.vr {
+  width: 2px;
+  background-color: #dee2e6;
+  opacity: 1;
+}

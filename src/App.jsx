@@ -436,10 +436,10 @@ const JurorView = ({
           className="btn btn-sm btn-outline-light opacity-75"
           onClick={onBack}
         >
-          <span className="me-1">←</span> Volver
+          <span className="me-1">←</span> 
         </button>
-        <h5 className="m-0 fw-bold text-uppercase tracking-wider">
-          <span className="text-primary">Planilla</span> {config.jurors[role]}
+        <h5 className="m-0 fw-bold text-uppercase tracking-wider" style={{ fontSize: '18px' }}>
+          <span className="text-primary">Planilla</span> {config.jurors[role]} 
         </h5>
         <div className="badge bg-success">
           {isSyncing ? "Sincronizando..." : "Conectado"}
@@ -789,7 +789,8 @@ const JurorView = ({
             </div>
           </div>
           <button
-            className="btn btn-success px-5 py-2 fw-bold shadow-sm"
+            className="btn btn-success  fw-bold shadow-sm "
+            style={{ borderRadius: "20px", overflow: "hidden",fontSize:"10px" }}
             onClick={onSave}
           >
             🚀 ENVIAR RESULTADOS

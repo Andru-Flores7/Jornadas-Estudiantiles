@@ -29,7 +29,8 @@ Para evitar que los puntos se "tripliquen" al tener tres jurados, el sistema uti
 *   **Cómputo por Mayoría**: El equipo que sea declarado ganador por la mayoría de los jurados (ej: 2 de 3) se lleva el premio único de la categoría. Esto evita que los puntos se dupliquen o tripliquen.
 
 ### 3. Puntos de Desempeño (Ritmos y Videoclip)
-*   Las calificaciones numéricas (1-5 o 1-8) de **todos** los jurados se **suman**. Esto premia la calidad percibida por cada juez de forma acumulativa.
+*   **Importante**: Para mantener un puntaje total controlado de **48 puntos**, el sistema ya NO suma las calificaciones numéricas base de los jurados al total acumulado. Estas calificaciones se utilizan únicamente para determinar de forma interna quién es el ganador del premio de la categoría.
+*   **Puntajes Fijos**: Cada categoría otorga un puntaje fijo al ganador por consenso (ej: 15 pts para Videoclip, 3 pts para Mascota).
 
 ---
 

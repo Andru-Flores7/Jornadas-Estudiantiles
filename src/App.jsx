@@ -88,8 +88,8 @@ const calculateFinal = (data) => {
 
   const countMasA = data.mascota.filter((v) => v === "A").length,
     countMasB = data.mascota.filter((v) => v === "B").length;
-  const prizeMasA = countMasA > countMasB && countMasA > 0 ? 4 : 0;
-  const prizeMasB = countMasB > countMasA && countMasB > 0 ? 4 : 0;
+  const prizeMasA = countMasA > countMasB && countMasA > 0 ? 3 : 0;
+  const prizeMasB = countMasB > countMasA && countMasB > 0 ? 3 : 0;
 
   const sumR1A = Object.values(data.ritmo1.A).reduce(
     (acc, v) => acc + (Number(v) || 0),
@@ -203,14 +203,10 @@ const calculateConsensus = (db, jurors) => {
   };
 
   const pop = getConsensusPrize("prizePopA", "prizePopB", 4);
-  const mas = getConsensusPrize("prizeMasA", "prizeMasB", 4);
+  const mas = getConsensusPrize("prizeMasA", "prizeMasB", 3);
   const r1 = getConsensusPrize("prizeR1A", "prizeR1B", 4);
   const r2 = getConsensusPrize("prizeR2A", "prizeR2B", 4);
   const vidPrize = getConsensusPrize("prizeVidA", "prizeVidB", 15);
-
-  // 3. Videoclip (Suma de puntos base de todos + Premio por consenso)
-  const sumVidBaseA = individualResults.reduce((acc, r) => acc + r.sumVidA, 0);
-  const sumVidBaseB = individualResults.reduce((acc, r) => acc + r.sumVidB, 0);
 
   const breakdown = {
     juegosA,
@@ -224,8 +220,8 @@ const calculateConsensus = (db, jurors) => {
     r1B: r1.b,
     r2A: r2.a,
     r2B: r2.b,
-    vidA: sumVidBaseA + vidPrize.a,
-    vidB: sumVidBaseB + vidPrize.b,
+    vidA: vidPrize.a,
+    vidB: vidPrize.b,
   };
 
   return {
@@ -581,7 +577,7 @@ const JurorView = ({
         <section className="col-12">
           <div className="card shadow-sm border-0">
             <div className="card-header text-white fw-bold">
-              POPURRÍ ALTERNATIVO DE LA MASCOTA (4 pts)
+              POPURRÍ ALTERNATIVO DE LA MASCOTA (3 pts)
             </div>
             <div className="card-body p-0 overflow-auto">
               <table className="table table-bordered text-center m-0">
@@ -887,60 +883,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
   const [editConfig, setEditConfig] = useState(config);
   const [isSaving, setIsSaving] = useState(false);
-  const [announcement, setAnnouncement] = useState(null);
-  const announcedRef = useRef({});
-
   const { totalA, totalB, breakdown } = calculateConsensus(db, jurors);
-
-  useEffect(() => {
-    const categories = [
-      {
-        id: "pop",
-        label: "Ganador Popurrí Alternativo",
-        a: breakdown.popA,
-        b: breakdown.popB,
-      },
-      {
-        id: "mas",
-        label: "Ganador Popurrí Mascota",
-        a: breakdown.masA,
-        b: breakdown.masB,
-      },
-      {
-        id: "r1",
-        label: "Ganador Ritmo 1",
-        a: breakdown.r1A,
-        b: breakdown.r1B,
-      },
-      {
-        id: "r2",
-        label: "Ganador Ritmo 2",
-        a: breakdown.r2A,
-        b: breakdown.r2B,
-      },
-      {
-        id: "vid",
-        label: "Ganador Video Clip",
-        a: breakdown.vidA,
-        b: breakdown.vidB,
-      },
-    ];
-
-    categories.forEach((cat) => {
-      const winner = cat.a === cat.b ? null : cat.a > cat.b ? teamA : teamB;
-      if (winner && !announcedRef.current[cat.id]) {
-        announcedRef.current[cat.id] = true;
-        setAnnouncement({ winner, category: cat.label });
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#ff9800", "#ffffff", "#ffd700"],
-        });
-        setTimeout(() => setAnnouncement(null), 5000);
-      }
-    });
-  }, [breakdown, teamA, teamB]);
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
@@ -1338,37 +1281,6 @@ const AdminView = ({ db, onBack, onReset, config }) => {
         </div>
       </div>
 
-      {announcement && (
-        <div className="announcement-overlay d-flex align-items-center justify-content-center text-center">
-          <div className="announcement-card p-5 shadow-lg border-0 bg-dark text-white rounded-5 animate__animated animate__zoomIn">
-            <div className="display-4 mb-3">🎊 ¡TENEMOS GANADOR! 🎊</div>
-            <h1
-              className="display-1 fw-bolder mb-3"
-              style={{ color: "#ff9800" }}
-            >
-              {announcement.winner}
-            </h1>
-            <h3 className="text-uppercase tracking-widest opacity-75">
-              ha ganado la categoría de
-            </h3>
-            <div className="h2 mt-3 fw-bold text-info">
-              {announcement.category}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        .announcement-overlay {
-          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-          background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
-          z-index: 9999; animation: fadeIn 0.5s ease;
-        }
-        .announcement-card { border: 2px solid #ff9800 !important; max-width: 800px; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .animate__zoomIn { animation: zoomIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        @keyframes zoomIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-      `}</style>
     </div>
   );
 };

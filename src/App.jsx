@@ -800,11 +800,11 @@ const JurorView = ({
   );
 };
 
-const CategoryWinnerCard = ({ label, a, b, teamA, teamB }) => {
-  const winner = a === b ? (a > 0 ? "EMPATE" : null) : a > b ? teamA : teamB;
+const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
+  const winner = a === b ? (hasData ? "EMPATE" : null) : a > b ? teamA : teamB;
   return (
     <div
-      className="card border-0 shadow-lg text-white mb-3"
+      className="card border-0 shadow-lg text-white mb-5"
       style={{
         background: "linear-gradient(135deg, #2c3e50, #000000)",
         borderRadius: "20px",
@@ -1123,6 +1123,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                 b={cat.b}
                 teamA={teamA}
                 teamB={teamB}
+                hasData={jurors.some(j => db[j.id]?.submitted)}
               />
             </div>
           ))}

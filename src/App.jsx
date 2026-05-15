@@ -9,18 +9,59 @@ const createInitialJurorState = () => ({
   popurri: Array(10).fill(null),
   mascota: Array(4).fill(null),
   ritmo1: {
-    A: { vestimenta: '', originalidad: '', coordinacion: '', energia: '', espacio: '' },
-    B: { vestimenta: '', originalidad: '', coordinacion: '', energia: '', espacio: '' }
+    A: { vestimenta: '', originalidad: '', desplazamiento: '', coordinacion: '', 'conexion en pareja': '' },
+    B: { vestimenta: '', originalidad: '', desplazamiento: '', coordinacion: '', 'conexion en pareja': '' }
   },
   ritmo2: {
-    A: { vestimenta: '', originalidad: '', coordinacion: '', energia: '', espacio: '' },
-    B: { vestimenta: '', originalidad: '', coordinacion: '', energia: '', espacio: '' }
+    A: { vestimenta: '', originalidad: '', desplazamiento: '', coordinacion: '', 'conexion en pareja': '' },
+    B: { vestimenta: '', originalidad: '', desplazamiento: '', coordinacion: '', 'conexion en pareja': '' }
   },
   videoclip: {
-    A: { edicion: '', actuacion: '', escenografia: '', creatividad: '', calidad: '', mensaje: '' },
-    B: { edicion: '', actuacion: '', escenografia: '', creatividad: '', calidad: '', mensaje: '' }
+    A: { 'cordinacion coreografica': '', 'composicion coreografica': '', 'adaptacion al tiempo musical': '', 'uso del espacio': '', 'impacto visual': '', carisma: '' },
+    B: { 'cordinacion coreografica': '', 'composicion coreografica': '', 'adaptacion al tiempo musical': '', 'uso del espacio': '', 'impacto visual': '', carisma: '' }
   }
 });
+
+const calculateFinal = (data) => {
+  if (!data) return { a: 0, b: 0 };
+  const ptsJuegosA = data.juegos.filter(v => v === 'A').length * 6;
+  const ptsJuegosB = data.juegos.filter(v => v === 'B').length * 6;
+  
+  const countPopA = data.popurri.filter(v => v === 'A').length, countPopB = data.popurri.filter(v => v === 'B').length;
+  const prizePopA = (countPopA > countPopB && countPopA > 0) ? 4 : 0;
+  const prizePopB = (countPopB > countPopA && countPopB > 0) ? 4 : 0;
+  
+  const countMasA = data.mascota.filter(v => v === 'A').length, countMasB = data.mascota.filter(v => v === 'B').length;
+  const prizeMasA = (countMasA > countMasB && countMasA > 0) ? 4 : 0;
+  const prizeMasB = (countMasB > countMasA && countMasB > 0) ? 4 : 0;
+  
+  const sumR1A = Object.values(data.ritmo1.A).reduce((acc,v)=>acc+(Number(v)||0),0);
+  const sumR1B = Object.values(data.ritmo1.B).reduce((acc,v)=>acc+(Number(v)||0),0);
+  const prizeR1A = (sumR1A > sumR1B && sumR1A > 0) ? 4 : 0;
+  const prizeR1B = (sumR1B > sumR1A && sumR1B > 0) ? 4 : 0;
+  
+  const sumR2A = Object.values(data.ritmo2.A).reduce((acc,v)=>acc+(Number(v)||0),0);
+  const sumR2B = Object.values(data.ritmo2.B).reduce((acc,v)=>acc+(Number(v)||0),0);
+  const prizeR2A = (sumR2A > sumR2B && sumR2A > 0) ? 4 : 0;
+  const prizeR2B = (sumR2B > sumR2A && sumR2B > 0) ? 4 : 0;
+  
+  const sumVidA = Object.values(data.videoclip.A).reduce((acc,v)=>acc+(Number(v)||0),0);
+  const sumVidB = Object.values(data.videoclip.B).reduce((acc,v)=>acc+(Number(v)||0),0);
+  const prizeVidA = (sumVidA > sumVidB && sumVidA > 0) ? 15 : 0;
+  const prizeVidB = (sumVidB > sumVidA && sumVidB > 0) ? 15 : 0;
+  
+  return { 
+    ptsJuegosA, ptsJuegosB,
+    prizePopA, prizePopB,
+    prizeMasA, prizeMasB,
+    prizeR1A, prizeR1B,
+    prizeR2A, prizeR2B,
+    sumVidA, sumVidB,
+    prizeVidA, prizeVidB,
+    totalA: ptsJuegosA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeVidA, 
+    totalB: ptsJuegosB + prizePopB + prizeMasB + prizeR1B + prizeR2B + prizeVidB 
+  };
+};
 
 const App = () => {
   const [role, setRole] = useState(null); 
@@ -41,6 +82,15 @@ const App = () => {
 
     const channel = supabase.channel('jornadas_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'jornadas_scores' }, (payload) => {
+        if (payload.eventType === 'DELETE') {
+          const oldJurorId = payload.old.juror_id;
+          setDb(prev => ({ ...prev, [oldJurorId]: null }));
+          if (role === oldJurorId) {
+            setJurorData(createInitialJurorState());
+          }
+          return;
+        }
+
         const newJurorId = payload.new.juror_id;
         const newPayload = payload.new.payload;
 
@@ -126,36 +176,7 @@ const RoleSelection = ({ onSelect }) => (
 );
 
 const JurorView = ({ role, data, setData, onSave, onBack, isSyncing }) => {
-  const calc = useMemo(() => {
-    const ptsJuegosA = data.juegos.filter(v => v === 'A').length * 6;
-    const ptsJuegosB = data.juegos.filter(v => v === 'B').length * 6;
-    const countPopA = data.popurri.filter(v => v === 'A').length, countPopB = data.popurri.filter(v => v === 'B').length;
-    const prizePopA = countPopA > countPopB ? 4 : 0, prizePopB = countPopB > countPopA ? 4 : 0;
-    const sumR1A = Object.values(data.ritmo1.A).reduce((acc, val) => acc + (Number(val) || 0), 0);
-    const sumR1B = Object.values(data.ritmo1.B).reduce((acc, val) => acc + (Number(val) || 0), 0);
-    const prizeR1A = (sumR1A > sumR1B && sumR1A > 0) ? 4 : 0, prizeR1B = (sumR1B > sumR1A && sumR1B > 0) ? 4 : 0;
-    const sumR2A = Object.values(data.ritmo2.A).reduce((acc, val) => acc + (Number(val) || 0), 0);
-    const sumR2B = Object.values(data.ritmo2.B).reduce((acc, val) => acc + (Number(val) || 0), 0);
-    const prizeR2A = (sumR2A > sumR2B && sumR2A > 0) ? 4 : 0, prizeR2B = (sumR2B > sumR2A && sumR2B > 0) ? 4 : 0;
-    const sumVidA = Object.values(data.videoclip.A).reduce((acc, val) => acc + (Number(val) || 0), 0);
-    const sumVidB = Object.values(data.videoclip.B).reduce((acc, val) => acc + (Number(val) || 0), 0);
-    const prizeVidA = (sumVidA > sumVidB && sumVidA > 0) ? 15 : 0, prizeVidB = (sumVidB > sumVidA && sumVidB > 0) ? 15 : 0;
-    
-    const countMasA = data.mascota.filter(v => v === 'A').length, countMasB = data.mascota.filter(v => v === 'B').length;
-    const prizeMasA = countMasA > countMasB ? 4 : 0, prizeMasB = countMasB > countMasA ? 4 : 0;
-
-    return { 
-      ptsJuegosA, ptsJuegosB, 
-      prizePopA, prizePopB, 
-      prizeMasA, prizeMasB,
-      prizeR1A, prizeR1B, 
-      prizeR2A, prizeR2B, 
-      sumVidA, sumVidB, 
-      prizeVidA, prizeVidB, 
-      totalA: ptsJuegosA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeVidA, 
-      totalB: ptsJuegosB + prizePopB + prizeMasB + prizeR1B + prizeR2B + prizeVidB 
-    };
-  }, [data]);
+  const calc = useMemo(() => calculateFinal(data), [data]);
 
   const handleScoreChange = (section, team, criterion, value, max) => {
     if (value === '' || (Number(value) >= 1 && Number(value) <= max)) {
@@ -260,44 +281,28 @@ const AdminView = ({ db, onBack, onReset }) => {
   const teamA = jurorWithNames.header.teamA;
   const teamB = jurorWithNames.header.teamB;
 
-  const calculateFinal = (data) => {
-    if (!data) return { a: 0, b: 0 };
-    const ptsA = data.juegos.filter(v => v === 'A').length * 6, ptsB = data.juegos.filter(v => v === 'B').length * 6;
-    const popA = data.popurri.filter(v => v === 'A').length > data.popurri.filter(v => v === 'B').length ? 4 : 0;
-    const popB = data.popurri.filter(v => v === 'B').length > data.popurri.filter(v => v === 'A').length ? 4 : 0;
-    const masA = data.mascota.filter(v => v === 'A').length > data.mascota.filter(v => v === 'B').length ? 4 : 0;
-    const masB = data.mascota.filter(v => v === 'B').length > data.mascota.filter(v => v === 'A').length ? 4 : 0;
-    const r1A = Object.values(data.ritmo1.A).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.ritmo1.B).reduce((acc,v)=>acc+(Number(v)||0),0) ? 4 : 0;
-    const r1B = Object.values(data.ritmo1.B).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.ritmo1.A).reduce((acc,v)=>acc+(Number(v)||0),0) ? 4 : 0;
-    const r2A = Object.values(data.ritmo2.A).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.ritmo2.B).reduce((acc,v)=>acc+(Number(v)||0),0) ? 4 : 0;
-    const r2B = Object.values(data.ritmo2.B).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.ritmo2.A).reduce((acc,v)=>acc+(Number(v)||0),0) ? 4 : 0;
-    const vidA = Object.values(data.videoclip.A).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.videoclip.B).reduce((acc,v)=>acc+(Number(v)||0),0) ? 15 : 0;
-    const vidB = Object.values(data.videoclip.B).reduce((acc,v)=>acc+(Number(v)||0),0) > Object.values(data.videoclip.A).reduce((acc,v)=>acc+(Number(v)||0),0) ? 15 : 0;
-    return { a: ptsA + popA + masA + r1A + r2A + vidA, b: ptsB + popB + masB + r1B + r2B + vidB };
-  };
-
   const jurors = [{id:'juror1',label:'Jurado 1'},{id:'juror2',label:'Jurado 2'},{id:'juror3',label:'Jurado 3'}];
   const submitted = jurors.filter(j => db[j.id]?.submitted);
-  const avgA = submitted.length ? (submitted.reduce((acc, j) => acc + calculateFinal(db[j.id]).a, 0) / submitted.length).toFixed(1) : 0;
-  const avgB = submitted.length ? (submitted.reduce((acc, j) => acc + calculateFinal(db[j.id]).b, 0) / submitted.length).toFixed(1) : 0;
+  const totalA = submitted.reduce((acc, j) => acc + calculateFinal(db[j.id]).totalA, 0);
+  const totalB = submitted.reduce((acc, j) => acc + calculateFinal(db[j.id]).totalB, 0);
 
   return (
     <div className="container py-5">
       <div className="d-flex justify-content-between mb-4"><button className="btn btn-outline-secondary btn-sm" onClick={onBack}>Volver</button><button className="btn btn-danger btn-sm" onClick={onReset}>🧹 Limpiar Evento</button></div>
       <h2 className="text-center fw-bold mb-5 text-uppercase">Resultados de {teamA} vs {teamB}</h2>
       <div className="row g-4 mb-5">
-        {jurors.map(j => (<div className="col-md-4" key={j.id}><div className={`card shadow-sm border-0 p-3 text-center ${db[j.id]?.submitted ? 'border-top border-success border-4':'opacity-50'}`}><h6>{j.label}</h6><b>{teamA}: {db[j.id]?calculateFinal(db[j.id]).a:'-'} | {teamB}: {db[j.id]?calculateFinal(db[j.id]).b:'-'}</b></div></div>))}
+        {jurors.map(j => (<div className="col-md-4" key={j.id}><div className={`card shadow-sm border-0 p-3 text-center ${db[j.id]?.submitted ? 'border-top border-success border-4':'opacity-50'}`}><h6>{j.label}</h6><b>{teamA}: {db[j.id]?calculateFinal(db[j.id]).totalA:'-'} | {teamB}: {db[j.id]?calculateFinal(db[j.id]).totalB:'-'}</b></div></div>))}
       </div>
       <div className="card shadow-lg bg-dark bg-opacity-75 text-white p-5 text-center border-0 backdrop-blur" style={{borderRadius:'30px'}}>
         <div className="row justify-content-center align-items-center">
-          <div className="col-md-5"><div className="display-1 fw-bold text-info">{avgA}</div><h4 className="text-uppercase">{teamA}</h4></div>
+          <div className="col-md-5"><div className="display-1 fw-bold text-info">{totalA}</div><h4 className="text-uppercase">{teamA}</h4></div>
           <div className="col-md-2 display-4 opacity-25">VS</div>
-          <div className="col-md-5"><div className="display-1 fw-bold text-info">{avgB}</div><h4 className="text-uppercase">{teamB}</h4></div>
+          <div className="col-md-5"><div className="display-1 fw-bold text-info">{totalB}</div><h4 className="text-uppercase">{teamB}</h4></div>
         </div>
         <div className="mt-5">
           <div className="winner-badge shadow-lg">
             <h2 className="m-0 fw-bolder text-uppercase tracking-tighter">
-              🏆 GANADOR: {Number(avgA) === Number(avgB) ? 'EMPATE' : (Number(avgA) > Number(avgB) ? teamA : teamB)}
+              🏆 GANADOR: {totalA === totalB ? 'EMPATE' : (totalA > totalB ? teamA : teamB)}
             </h2>
           </div>
         </div>

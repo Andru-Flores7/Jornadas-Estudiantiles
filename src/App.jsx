@@ -1140,8 +1140,8 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             <div className="card-header bg-primary text-white py-3 fw-bold text-center text-uppercase tracking-wider">
               Puntaje en Vivo por Categoría
             </div>
-            <div className="card-body p-0">
-              <table className="table table-hover m-0 align-middle text-center">
+            <div className="card-body p-0 table-responsive">
+              <table className="table table-hover m-0 align-middle text-center responsive-table-admin">
                 <thead className="table-light">
                   <tr>
                     <th className="text-start ps-4">Categoría</th>

@@ -272,3 +272,20 @@ label, .form-label, .small {
     box-shadow: 0 0 40px rgba(186, 139, 2, 0.9), 0 0 60px rgba(241, 196, 15, 0.4);
   }
 }
+
+@media (max-width: 600px) {
+  .responsive-table-admin {
+    font-size: 0.7rem !important;
+  }
+  .responsive-table-admin th, 
+  .responsive-table-admin td {
+    padding: 8px 4px !important;
+  }
+  .responsive-table-admin .badge {
+    font-size: 0.65rem !important;
+    padding: 3px 6px !important;
+  }
+  .responsive-table-admin .h4 {
+    font-size: 1rem !important;
+  }
+}

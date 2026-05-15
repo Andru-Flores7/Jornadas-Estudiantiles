@@ -1,128 +1,314 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { supabase } from './supabase';
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { supabase } from "./supabase";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import confetti from "canvas-confetti";
+import GlobalHeader from "./components/GlobalHeader";
+import GlobalFooter from "./components/GlobalFooter";
 
 // --- INITIAL STATE ---
 const createInitialJurorState = () => ({
   submitted: false,
-  header: { jury: '', matchNo: '', teamA: 'Equipo A', teamB: 'Equipo B' },
+  header: { jury: "", matchNo: "", teamA: "Equipo A", teamB: "Equipo B" },
   juegos: Array(3).fill(null),
   popurri: Array(10).fill(null),
   mascota: Array(4).fill(null),
   ritmo1: {
-    A: { vestimenta: '', originalidad: '', desplazamiento: '', coordinacion: '', 'conexion en pareja': '' },
-    B: { vestimenta: '', originalidad: '', desplazamiento: '', coordinacion: '', 'conexion en pareja': '' }
+    A: {
+      vestimenta: "",
+      originalidad: "",
+      desplazamiento: "",
+      coordinacion: "",
+      "conexion en pareja": "",
+    },
+    B: {
+      vestimenta: "",
+      originalidad: "",
+      desplazamiento: "",
+      coordinacion: "",
+      "conexion en pareja": "",
+    },
   },
   ritmo2: {
-    A: { vestimenta: '', originalidad: '', desplazamiento: '', coordinacion: '', 'conexion en pareja': '' },
-    B: { vestimenta: '', originalidad: '', desplazamiento: '', coordinacion: '', 'conexion en pareja': '' }
+    A: {
+      vestimenta: "",
+      originalidad: "",
+      desplazamiento: "",
+      coordinacion: "",
+      "conexion en pareja": "",
+    },
+    B: {
+      vestimenta: "",
+      originalidad: "",
+      desplazamiento: "",
+      coordinacion: "",
+      "conexion en pareja": "",
+    },
   },
   videoclip: {
-    A: { 'cordinacion coreografica': '', 'composicion coreografica': '', 'adaptacion al tiempo musical': '', 'uso del espacio': '', 'impacto visual': '', carisma: '' },
-    B: { 'cordinacion coreografica': '', 'composicion coreografica': '', 'adaptacion al tiempo musical': '', 'uso del espacio': '', 'impacto visual': '', carisma: '' }
-  }
+    A: {
+      "cordinacion coreografica": "",
+      "composicion coreografica": "",
+      "adaptacion al tiempo musical": "",
+      "uso del espacio": "",
+      "impacto visual": "",
+      carisma: "",
+    },
+    B: {
+      "cordinacion coreografica": "",
+      "composicion coreografica": "",
+      "adaptacion al tiempo musical": "",
+      "uso del espacio": "",
+      "impacto visual": "",
+      carisma: "",
+    },
+  },
 });
+
+const initialConfig = {
+  teamA: "Equipo A",
+  teamB: "Equipo B",
+  matchNo: "1",
+  jurors: {
+    juror1: "Jurado 1",
+    juror2: "Jurado 2",
+    juror3: "Jurado 3",
+  },
+};
 
 const calculateFinal = (data) => {
   if (!data) return { a: 0, b: 0 };
-  const ptsJuegosA = data.juegos.filter(v => v === 'A').length * 6;
-  const ptsJuegosB = data.juegos.filter(v => v === 'B').length * 6;
-  
-  const countPopA = data.popurri.filter(v => v === 'A').length, countPopB = data.popurri.filter(v => v === 'B').length;
-  const prizePopA = (countPopA > countPopB && countPopA > 0) ? 4 : 0;
-  const prizePopB = (countPopB > countPopA && countPopB > 0) ? 4 : 0;
-  
-  const countMasA = data.mascota.filter(v => v === 'A').length, countMasB = data.mascota.filter(v => v === 'B').length;
-  const prizeMasA = (countMasA > countMasB && countMasA > 0) ? 4 : 0;
-  const prizeMasB = (countMasB > countMasA && countMasB > 0) ? 4 : 0;
-  
-  const sumR1A = Object.values(data.ritmo1.A).reduce((acc,v)=>acc+(Number(v)||0),0);
-  const sumR1B = Object.values(data.ritmo1.B).reduce((acc,v)=>acc+(Number(v)||0),0);
-  const prizeR1A = (sumR1A > sumR1B && sumR1A > 0) ? 4 : 0;
-  const prizeR1B = (sumR1B > sumR1A && sumR1B > 0) ? 4 : 0;
-  
-  const sumR2A = Object.values(data.ritmo2.A).reduce((acc,v)=>acc+(Number(v)||0),0);
-  const sumR2B = Object.values(data.ritmo2.B).reduce((acc,v)=>acc+(Number(v)||0),0);
-  const prizeR2A = (sumR2A > sumR2B && sumR2A > 0) ? 4 : 0;
-  const prizeR2B = (sumR2B > sumR2A && sumR2B > 0) ? 4 : 0;
-  
-  const sumVidA = Object.values(data.videoclip.A).reduce((acc,v)=>acc+(Number(v)||0),0);
-  const sumVidB = Object.values(data.videoclip.B).reduce((acc,v)=>acc+(Number(v)||0),0);
-  const prizeVidA = (sumVidA > sumVidB && sumVidA > 0) ? 15 : 0;
-  const prizeVidB = (sumVidB > sumVidA && sumVidB > 0) ? 15 : 0;
-  
-  return { 
-    ptsJuegosA, ptsJuegosB,
-    prizePopA, prizePopB,
-    prizeMasA, prizeMasB,
-    prizeR1A, prizeR1B,
-    prizeR2A, prizeR2B,
-    sumVidA, sumVidB,
-    prizeVidA, prizeVidB,
-    totalA: ptsJuegosA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeVidA, 
-    totalB: ptsJuegosB + prizePopB + prizeMasB + prizeR1B + prizeR2B + prizeVidB 
+  const ptsJuegosA = data.juegos.filter((v) => v === "A").length * 6;
+  const ptsJuegosB = data.juegos.filter((v) => v === "B").length * 6;
+
+  const countPopA = data.popurri.filter((v) => v === "A").length,
+    countPopB = data.popurri.filter((v) => v === "B").length;
+  const prizePopA = countPopA > countPopB && countPopA > 0 ? 4 : 0;
+  const prizePopB = countPopB > countPopA && countPopB > 0 ? 4 : 0;
+
+  const countMasA = data.mascota.filter((v) => v === "A").length,
+    countMasB = data.mascota.filter((v) => v === "B").length;
+  const prizeMasA = countMasA > countMasB && countMasA > 0 ? 4 : 0;
+  const prizeMasB = countMasB > countMasA && countMasB > 0 ? 4 : 0;
+
+  const sumR1A = Object.values(data.ritmo1.A).reduce(
+    (acc, v) => acc + (Number(v) || 0),
+    0,
+  );
+  const sumR1B = Object.values(data.ritmo1.B).reduce(
+    (acc, v) => acc + (Number(v) || 0),
+    0,
+  );
+  const prizeR1A = sumR1A > sumR1B && sumR1A > 0 ? 4 : 0;
+  const prizeR1B = sumR1B > sumR1A && sumR1B > 0 ? 4 : 0;
+
+  const sumR2A = Object.values(data.ritmo2.A).reduce(
+    (acc, v) => acc + (Number(v) || 0),
+    0,
+  );
+  const sumR2B = Object.values(data.ritmo2.B).reduce(
+    (acc, v) => acc + (Number(v) || 0),
+    0,
+  );
+  const prizeR2A = sumR2A > sumR2B && sumR2A > 0 ? 4 : 0;
+  const prizeR2B = sumR2B > sumR2A && sumR2B > 0 ? 4 : 0;
+
+  const sumVidA = Object.values(data.videoclip.A).reduce(
+    (acc, v) => acc + (Number(v) || 0),
+    0,
+  );
+  const sumVidB = Object.values(data.videoclip.B).reduce(
+    (acc, v) => acc + (Number(v) || 0),
+    0,
+  );
+  const prizeVidA = sumVidA > sumVidB && sumVidA > 0 ? 15 : 0;
+  const prizeVidB = sumVidB > sumVidA && sumVidB > 0 ? 15 : 0;
+
+  return {
+    ptsJuegosA,
+    ptsJuegosB,
+    prizePopA,
+    prizePopB,
+    prizeMasA,
+    prizeMasB,
+    prizeR1A,
+    prizeR1B,
+    prizeR2A,
+    prizeR2B,
+    sumVidA,
+    sumVidB,
+    prizeVidA,
+    prizeVidB,
+    totalA:
+      ptsJuegosA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeVidA,
+    totalB:
+      ptsJuegosB + prizePopB + prizeMasB + prizeR1B + prizeR2B + prizeVidB,
+  };
+};
+
+const calculateConsensus = (db, jurors) => {
+  const submittedIds = jurors
+    .filter((j) => db[j.id]?.submitted)
+    .map((j) => j.id);
+  if (submittedIds.length === 0)
+    return {
+      totalA: 0,
+      totalB: 0,
+      breakdown: {
+        juegosA: 0,
+        juegosB: 0,
+        popA: 0,
+        popB: 0,
+        masA: 0,
+        masB: 0,
+        r1A: 0,
+        r1B: 0,
+        r2A: 0,
+        r2B: 0,
+        vidA: 0,
+        vidB: 0,
+      },
+    };
+
+  const individualResults = submittedIds.map((id) => calculateFinal(db[id]));
+
+  // 1. Juegos (6 pts por juego, por mayoría)
+  let juegosA = 0,
+    juegosB = 0;
+  const individualGames = [];
+  for (let i = 0; i < 3; i++) {
+    let votesA = 0,
+      votesB = 0;
+    submittedIds.forEach((id) => {
+      if (db[id].juegos[i] === "A") votesA++;
+      if (db[id].juegos[i] === "B") votesB++;
+    });
+    const gameWinner = votesA > votesB ? "A" : votesB > votesA ? "B" : null;
+    if (gameWinner === "A") juegosA += 6;
+    else if (gameWinner === "B") juegosB += 6;
+    individualGames.push(gameWinner);
+  }
+
+  // 2. Función genérica para premios por mayoría
+  const getConsensusPrize = (keyA, keyB, points) => {
+    let winA = 0,
+      winB = 0;
+    individualResults.forEach((r) => {
+      if (r[keyA] > r[keyB]) winA++;
+      else if (r[keyB] > r[keyA]) winB++;
+    });
+    if (winA > winB) return { a: points, b: 0 };
+    if (winB > winA) return { a: 0, b: points };
+    return { a: 0, b: 0 };
+  };
+
+  const pop = getConsensusPrize("prizePopA", "prizePopB", 4);
+  const mas = getConsensusPrize("prizeMasA", "prizeMasB", 4);
+  const r1 = getConsensusPrize("prizeR1A", "prizeR1B", 4);
+  const r2 = getConsensusPrize("prizeR2A", "prizeR2B", 4);
+  const vidPrize = getConsensusPrize("prizeVidA", "prizeVidB", 15);
+
+  // 3. Videoclip (Suma de puntos base de todos + Premio por consenso)
+  const sumVidBaseA = individualResults.reduce((acc, r) => acc + r.sumVidA, 0);
+  const sumVidBaseB = individualResults.reduce((acc, r) => acc + r.sumVidB, 0);
+
+  const breakdown = {
+    juegosA,
+    juegosB,
+    individualGames, // [A, B, null]
+    popA: pop.a,
+    popB: pop.b,
+    masA: mas.a,
+    masB: mas.b,
+    r1A: r1.a,
+    r1B: r1.b,
+    r2A: r2.a,
+    r2B: r2.b,
+    vidA: sumVidBaseA + vidPrize.a,
+    vidB: sumVidBaseB + vidPrize.b,
+  };
+
+  return {
+    totalA: juegosA + pop.a + mas.a + r1.a + r2.a + breakdown.vidA,
+    totalB: juegosB + pop.b + mas.b + r1.b + r2.b + breakdown.vidB,
+    breakdown,
   };
 };
 
 const App = () => {
-  const [role, setRole] = useState(null); 
+  const [role, setRole] = useState(null);
   const [jurorData, setJurorData] = useState(createInitialJurorState());
   const [db, setDb] = useState({ juror1: null, juror2: null, juror3: null });
+  const [config, setConfig] = useState(initialConfig);
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data } = await supabase.from('jornadas_scores').select('*');
+      const { data } = await supabase.from("jornadas_scores").select("*");
       if (data) {
         const newDb = { juror1: null, juror2: null, juror3: null };
-        data.forEach(row => { newDb[row.juror_id] = row.payload; });
+        data.forEach((row) => {
+          if (row.juror_id === "config") {
+            setConfig(row.payload);
+          } else {
+            newDb[row.juror_id] = row.payload;
+          }
+        });
         setDb(newDb);
       }
     };
     fetchData();
 
-    const channel = supabase.channel('jornadas_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'jornadas_scores' }, (payload) => {
-        if (payload.eventType === 'DELETE') {
-          const oldJurorId = payload.old.juror_id;
-          setDb(prev => ({ ...prev, [oldJurorId]: null }));
-          if (role === oldJurorId) {
-            setJurorData(createInitialJurorState());
-          }
-          return;
-        }
-
-        const newJurorId = payload.new.juror_id;
-        const newPayload = payload.new.payload;
-
-        setDb(prev => ({ ...prev, [newJurorId]: newPayload }));
-
-        // Sincronizar cabecera entre jurados
-        if (role && role !== 'admin' && newJurorId !== role) {
-          setJurorData(prev => ({
-            ...prev,
-            header: {
-              ...prev.header,
-              teamA: newPayload.header.teamA || prev.header.teamA,
-              teamB: newPayload.header.teamB || prev.header.teamB,
-              matchNo: newPayload.header.matchNo || prev.header.matchNo
+    const channel = supabase
+      .channel("jornadas_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jornadas_scores" },
+        (payload) => {
+          if (payload.eventType === "DELETE") {
+            const oldJurorId = payload.old.juror_id;
+            if (oldJurorId === "config") {
+              setConfig(initialConfig);
+            } else {
+              setDb((prev) => ({ ...prev, [oldJurorId]: null }));
+              if (role === oldJurorId) {
+                setJurorData(createInitialJurorState());
+              }
             }
-          }));
-        }
-      }).subscribe();
+            return;
+          }
+
+          const newJurorId = payload.new.juror_id;
+          const newPayload = payload.new.payload;
+
+          if (newJurorId === "config") {
+            setConfig(newPayload);
+          } else {
+            setDb((prev) => ({ ...prev, [newJurorId]: newPayload }));
+          }
+        },
+      )
+      .subscribe();
     return () => supabase.removeChannel(channel);
   }, [role]);
 
   const syncToSupabase = async (newData) => {
-    if (!role || role === 'admin') return;
+    if (!role || role === "admin") return;
     setIsSyncing(true);
-    await supabase.from('jornadas_scores').upsert({ juror_id: role, payload: newData, updated_at: new Date() });
+    await supabase
+      .from("jornadas_scores")
+      .upsert({ juror_id: role, payload: newData, updated_at: new Date() });
     setIsSyncing(false);
   };
 
   const handleSelectRole = async (selectedRole) => {
     setRole(selectedRole);
-    if (selectedRole !== 'admin') {
-      const { data } = await supabase.from('jornadas_scores').select('payload').eq('juror_id', selectedRole).single();
+    if (selectedRole !== "admin") {
+      const { data } = await supabase
+        .from("jornadas_scores")
+        .select("payload")
+        .eq("juror_id", selectedRole)
+        .single();
       if (data) setJurorData(data.payload);
       else setJurorData(createInitialJurorState());
     }
@@ -136,111 +322,373 @@ const App = () => {
   };
 
   const handleReset = async () => {
-    if (window.confirm("¿ESTÁS SEGURO? Esto borrará todos los puntos de TODOS los jurados para iniciar un nuevo encuentro.")) {
-      const { error } = await supabase.from('jornadas_scores').delete().neq('juror_id', 'null_check');
+    if (
+      window.confirm(
+        "¿ESTÁS SEGURO? Esto borrará TODOS los puntos y RESETEARÁ los nombres a sus valores por defecto.",
+      )
+    ) {
+      const { error } = await supabase
+        .from("jornadas_scores")
+        .delete()
+        .neq("juror_id", "null_check");
       if (!error) {
         setDb({ juror1: null, juror2: null, juror3: null });
-        alert("Base de datos reseteada correctamente.");
+        setConfig(initialConfig);
+        alert("Sistema reseteado completamente.");
       }
     }
   };
 
-  if (!role) return <RoleSelection onSelect={handleSelectRole} />;
-  if (role === 'admin') return <AdminView db={db} onBack={() => setRole(null)} onReset={handleReset} />;
-  
+  let content;
+  if (!role) {
+    content = <RoleSelection onSelect={handleSelectRole} config={config} />;
+  } else if (role === "admin") {
+    content = (
+      <AdminView
+        db={db}
+        onBack={() => setRole(null)}
+        onReset={handleReset}
+        config={config}
+      />
+    );
+  } else {
+    content = (
+      <JurorView
+        role={role}
+        data={jurorData}
+        config={config}
+        setData={(d) => {
+          setJurorData(d);
+          syncToSupabase(d);
+        }}
+        onSave={handleSave}
+        onBack={() => setRole(null)}
+        isSyncing={isSyncing}
+      />
+    );
+  }
+
   return (
-    <JurorView 
-      role={role} 
-      data={jurorData} 
-      setData={(d) => { setJurorData(d); syncToSupabase(d); }} 
-      onSave={handleSave} 
-      onBack={() => setRole(null)}
-      isSyncing={isSyncing}
-    />
+    <div className="min-vh-100 d-flex flex-column">
+      <GlobalHeader />
+      <div className="flex-grow-1">{content}</div>
+      <GlobalFooter />
+    </div>
   );
 };
 
 // --- COMPONENTES ---
-const RoleSelection = ({ onSelect }) => (
+const RoleSelection = ({ onSelect, config }) => (
   <div className="container d-flex align-items-center justify-content-center min-vh-100">
-    <div className="card shadow-lg p-5 text-center border-0" style={{ maxWidth: '600px', width: '100%', borderRadius: '24px' }}>
-      <h1 className="fw-bold text-primary mb-4">Jornadas 2026</h1>
+    <div
+      className="card shadow-lg p-5 text-center border-0"
+      style={{ maxWidth: "600px", width: "100%", borderRadius: "24px" }}
+    >
+      <h1 className="fw-bold text-primary mb-4">Jornadas Estudiantiles 2026</h1>
       <div className="row g-3">
-        {['juror1', 'juror2', 'juror3'].map((id, index) => (
-          <div className="col-12" key={id}><button className="btn btn-outline-primary btn-lg w-100 py-3 fw-bold" onClick={() => onSelect(id)}>Acceso Jurado {index + 1}</button></div>
+        {["juror1", "juror2", "juror3"].map((id) => (
+          <div className="col-12" key={id}>
+            <button
+              className="btn btn-outline-primary btn-lg w-100 py-3 fw-bold"
+              onClick={() => onSelect(id)}
+            >
+              Acceso {config.jurors[id]}
+            </button>
+          </div>
         ))}
-        <div className="col-12 mt-3"><button className="btn btn-dark btn-lg w-100 py-3 fw-bold shadow" onClick={() => onSelect('admin')}>🛡️ Administrador</button></div>
+        <div className="col-12 mt-3">
+          <button
+            className="btn btn-dark btn-lg w-100 py-3 fw-bold shadow"
+            onClick={() => onSelect("admin")}
+          >
+            🛡️ Administrador
+          </button>
+        </div>
       </div>
     </div>
   </div>
 );
 
-const JurorView = ({ role, data, setData, onSave, onBack, isSyncing }) => {
+const JurorView = ({
+  role,
+  data,
+  config,
+  setData,
+  onSave,
+  onBack,
+  isSyncing,
+}) => {
   const calc = useMemo(() => calculateFinal(data), [data]);
 
   const handleScoreChange = (section, team, criterion, value, max) => {
-    if (value === '' || (Number(value) >= 1 && Number(value) <= max)) {
-      setData({ ...data, [section]: { ...data[section], [team]: { ...data[section][team], [criterion]: value } } });
+    if (value === "" || (Number(value) >= 1 && Number(value) <= max)) {
+      setData({
+        ...data,
+        [section]: {
+          ...data[section],
+          [team]: { ...data[section][team], [criterion]: value },
+        },
+      });
     }
   };
 
   return (
     <div className="container-fluid py-4 min-vh-100 pb-5">
       <div className="card d-flex flex-row justify-content-between align-items-center mb-4 p-3 border-0">
-        <button className="btn btn-sm btn-outline-light opacity-75" onClick={onBack}>
+        <button
+          className="btn btn-sm btn-outline-light opacity-75"
+          onClick={onBack}
+        >
           <span className="me-1">←</span> Volver
         </button>
         <h5 className="m-0 fw-bold text-uppercase tracking-wider">
-          <span className="text-primary">Planilla</span> Jurado {role.slice(-1)}
+          <span className="text-primary">Planilla</span> {config.jurors[role]}
         </h5>
-        <div className="badge bg-success">{isSyncing ? 'Sincronizando...' : 'Conectado'}</div>
+        <div className="badge bg-success">
+          {isSyncing ? "Sincronizando..." : "Conectado"}
+        </div>
       </div>
 
-      <header className="card border-0 mb-4 p-4 text-white" style={{ background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(186, 139, 2, 0.15))', backdropFilter: 'blur(10px)' }}>
-        <div className="row g-4 align-items-end">
+      <header
+        className="card border-0 mb-4 p-4 text-white"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(186, 139, 2, 0.15))",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <div className="row g-4 align-items-end text-center">
           <div className="col-md-2">
-            <label className="form-label small text-uppercase fw-bold opacity-75 mb-2">Encuentro</label>
-            <input type="number" className="form-control form-control-lg text-center" value={data.header.matchNo} onChange={(e) => setData({...data, header: {...data.header, matchNo: e.target.value}})} />
+            <label className="form-label small text-uppercase fw-bold opacity-75 mb-1">
+              Encuentro
+            </label>
+            <div className="h3 m-0 fw-bold">#{config.matchNo}</div>
           </div>
           <div className="col-md-5">
-            <label className="form-label small text-uppercase fw-bold opacity-75 mb-2">Equipo A</label>
-            <input type="text" className="form-control form-control-lg" value={data.header.teamA} onChange={(e) => setData({...data, header: {...data.header, teamA: e.target.value}})} />
+            <label className="form-label small text-uppercase fw-bold opacity-75 mb-1">
+              Equipo A
+            </label>
+            <div className="h3 m-0 fw-bold">{config.teamA}</div>
           </div>
           <div className="col-md-5">
-            <label className="form-label small text-uppercase fw-bold opacity-75 mb-2">Equipo B</label>
-            <input type="text" className="form-control form-control-lg" value={data.header.teamB} onChange={(e) => setData({...data, header: {...data.header, teamB: e.target.value}})} />
+            <label className="form-label small text-uppercase fw-bold opacity-75 mb-1">
+              Equipo B
+            </label>
+            <div className="h3 m-0 fw-bold">{config.teamB}</div>
           </div>
         </div>
       </header>
 
       <main className="row g-4">
         {/* JUEGOS */}
-        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header text-white fw-bold">JUEGOS (6 pts c/u)</div><div className="card-body p-0"><table className="table table-bordered text-center m-0"><thead><tr><th>Juego</th><th>{data.header.teamA}</th><th>{data.header.teamB}</th></tr></thead><tbody>{[0, 1, 2].map(i => (<tr key={i}><td>#{i+1}</td><td><button className={`btn btn-lg ${data.juegos[i]==='A'?'btn-success':'btn-light'}`} onClick={()=>{const n=[...data.juegos];n[i]=n[i]==='A'?null:'A';setData({...data,juegos:n})}}>X</button></td><td><button className={`btn btn-lg ${data.juegos[i]==='B'?'btn-success':'btn-light'}`} onClick={()=>{const n=[...data.juegos];n[i]=n[i]==='B'?null:'B';setData({...data,juegos:n})}}>X</button></td></tr>))}</tbody></table></div></div></section>
+        <section className="col-12">
+          <div className="card shadow-sm border-0">
+            <div className="card-header text-white fw-bold">
+              JUEGOS (6 pts c/u)
+            </div>
+            <div className="card-body p-0">
+              <table className="table table-bordered text-center m-0">
+                <thead>
+                  <tr>
+                    <th>Juego</th>
+                    <th>{config.teamA}</th>
+                    <th>{config.teamB}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[0, 1, 2].map((i) => (
+                    <tr key={i}>
+                      <td>#{i + 1}</td>
+                      <td>
+                        <button
+                          className={`btn btn-lg ${data.juegos[i] === "A" ? "btn-success" : "btn-light"}`}
+                          onClick={() => {
+                            const n = [...data.juegos];
+                            n[i] = n[i] === "A" ? null : "A";
+                            setData({ ...data, juegos: n });
+                          }}
+                        >
+                          X
+                        </button>
+                      </td>
+                      <td>
+                        <button
+                          className={`btn btn-lg ${data.juegos[i] === "B" ? "btn-success" : "btn-light"}`}
+                          onClick={() => {
+                            const n = [...data.juegos];
+                            n[i] = n[i] === "B" ? null : "B";
+                            setData({ ...data, juegos: n });
+                          }}
+                        >
+                          X
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
         {/* POPURRI */}
-        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header text-white fw-bold">POPURRÍ (Premio: 4 pts)</div><div className="card-body p-0 overflow-auto"><table className="table table-bordered text-center m-0"><thead><tr><th>Equipo</th>{[...Array(10)].map((_,i)=><th key={i}>{i+1}</th>)}<th>Premio</th></tr></thead><tbody>{['A', 'B'].map(team => (<tr key={team}><td>{team==='A'?data.header.teamA:data.header.teamB}</td>{data.popurri.map((v, i)=>(<td key={i}><button className={`btn btn-sm ${v===team?'btn-primary':'btn-light'}`} style={{width:'30px'}} onClick={()=>{const n=[...data.popurri];n[i]=n[i]===team?null:team;setData({...data,popurri:n})}}>X</button></td>))}<td className="fw-bold">{team==='A'?calc.prizePopA:calc.prizePopB}</td></tr>))}</tbody></table></div></div></section>
-        
+        <section className="col-12">
+          <div className="card shadow-sm border-0">
+            <div className="card-header text-white fw-bold">
+              POPURRÍ ALTERNATIVO (4 pts)
+            </div>
+            <div className="card-body p-0 overflow-auto">
+              <table className="table table-bordered text-center m-0">
+                <thead>
+                  <tr>
+                    <th>Equipo</th>
+                    {[...Array(10)].map((_, i) => (
+                      <th key={i}>{i + 1}</th>
+                    ))}
+                    <th>Ganador Popurrí Alternativo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {["A", "B"].map((team) => (
+                    <tr key={team}>
+                      <td>{team === "A" ? config.teamA : config.teamB}</td>
+                      {data.popurri.map((v, i) => (
+                        <td key={i}>
+                          <button
+                            className={`btn btn-sm ${v === team ? "btn-primary" : "btn-light"}`}
+                            style={{ width: "30px" }}
+                            onClick={() => {
+                              const n = [...data.popurri];
+                              n[i] = n[i] === team ? null : team;
+                              setData({ ...data, popurri: n });
+                            }}
+                          >
+                            X
+                          </button>
+                        </td>
+                      ))}
+                      <td className="fw-bold">
+                        {team === "A" ? calc.prizePopA : calc.prizePopB}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         {/* POPURRI ALTERNATIVO DE LA MASCOTA */}
-        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header text-white fw-bold">POPURRÍ ALTERNATIVO DE LA MASCOTA (Premio: 4 pts)</div><div className="card-body p-0 overflow-auto"><table className="table table-bordered text-center m-0"><thead><tr><th>Equipo</th>{[...Array(4)].map((_,i)=><th key={i}>{i+1}</th>)}<th>Premio</th></tr></thead><tbody>{['A', 'B'].map(team => (<tr key={team}><td>{team==='A'?data.header.teamA:data.header.teamB}</td>{data.mascota.map((v, i)=>(<td key={i}><button className={`btn btn-sm ${v===team?'btn-primary':'btn-light'}`} style={{width:'30px'}} onClick={()=>{const n=[...data.mascota];n[i]=n[i]===team?null:team;setData({...data,mascota:n})}}>X</button></td>))}<td className="fw-bold">{team==='A'?calc.prizeMasA:calc.prizeMasB}</td></tr>))}</tbody></table></div></div></section>
+        <section className="col-12">
+          <div className="card shadow-sm border-0">
+            <div className="card-header text-white fw-bold">
+              POPURRÍ ALTERNATIVO DE LA MASCOTA (4 pts)
+            </div>
+            <div className="card-body p-0 overflow-auto">
+              <table className="table table-bordered text-center m-0">
+                <thead>
+                  <tr>
+                    <th>Equipo</th>
+                    {[...Array(4)].map((_, i) => (
+                      <th key={i}>{i + 1}</th>
+                    ))}
+                    <th>Ganador Popurrí Mascota</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {["A", "B"].map((team) => (
+                    <tr key={team}>
+                      <td>{team === "A" ? config.teamA : config.teamB}</td>
+                      {data.mascota.map((v, i) => (
+                        <td key={i}>
+                          <button
+                            className={`btn btn-sm ${v === team ? "btn-primary" : "btn-light"}`}
+                            style={{ width: "30px" }}
+                            onClick={() => {
+                              const n = [...data.mascota];
+                              n[i] = n[i] === team ? null : team;
+                              setData({ ...data, mascota: n });
+                            }}
+                          >
+                            X
+                          </button>
+                        </td>
+                      ))}
+                      <td className="fw-bold">
+                        {team === "A" ? calc.prizeMasA : calc.prizeMasB}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
         {/* RITMOS (DOS TABLAS) */}
-        {['ritmo1', 'ritmo2'].map((rit, idx) => (
+        {["ritmo1", "ritmo2"].map((rit, idx) => (
           <section className="col-lg-6" key={rit}>
             <div className="card shadow-sm border-0">
-              <div className="card-header text-white fw-bold">RITMO {idx + 1} (1-5 pts | Premio: 4 pts)</div>
+              <div className="card-header text-white fw-bold">
+                POPURRÍ ALTERNATIVO RITMO {idx + 1} (1-5 pts | 4 pts)
+              </div>
               <div className="card-body">
                 <div className="row g-3">
-                  {['A', 'B'].map(team => (
+                  {["A", "B"].map((team) => (
                     <div className="col-6" key={team}>
-                      <h6 className="small text-uppercase fw-bold opacity-75">{team === 'A' ? data.header.teamA : data.header.teamB}</h6>
+                      <h6 className="small text-uppercase fw-bold opacity-75">
+                        {team === "A" ? config.teamA : config.teamB}
+                      </h6>
                       <table className="table table-sm table-bordered text-center">
                         <tbody>
-                          {['vestimenta', 'originalidad', 'desplazamiento', 'coordinacion', 'conexion en pareja'].map(c => (
+                          {[
+                            "vestimenta",
+                            "originalidad",
+                            "desplazamiento",
+                            "coordinacion",
+                            "conexion en pareja",
+                          ].map((c) => (
                             <tr key={c}>
-                              <td className="text-start small opacity-75">{c}</td>
-                              <td><input type="number" className="form-control form-control-sm text-center mx-auto" value={data[rit][team][c]} onChange={(e) => handleScoreChange(rit, team, c, e.target.value, 5)} /></td>
+                              <td className="text-start small opacity-75">
+                                {c}
+                              </td>
+                              <td>
+                                <input
+                                  type="number"
+                                  className="form-control form-control-sm text-center mx-auto"
+                                  value={data[rit][team][c]}
+                                  onChange={(e) =>
+                                    handleScoreChange(
+                                      rit,
+                                      team,
+                                      c,
+                                      e.target.value,
+                                      5,
+                                    )
+                                  }
+                                />
+                              </td>
                             </tr>
                           ))}
-                          <tr className="table-warning"><td>Suma</td><td>{Object.values(data[rit][team]).reduce((a,v)=>a+(Number(v)||0),0)}</td></tr>
-                          <tr className="table-success"><td>Premio</td><td>{team === 'A' ? (idx === 0 ? calc.prizeR1A : calc.prizeR2A) : (idx === 0 ? calc.prizeR1B : calc.prizeR2B)}</td></tr>
+                          <tr className="table-warning">
+                            <td>Suma</td>
+                            <td>
+                              {Object.values(data[rit][team]).reduce(
+                                (a, v) => a + (Number(v) || 0),
+                                0,
+                              )}
+                            </td>
+                          </tr>
+                          <tr className="table-success">
+                            <td>Ganador Ritmo {idx + 1}</td>
+                            <td>
+                              {team === "A"
+                                ? idx === 0
+                                  ? calc.prizeR1A
+                                  : calc.prizeR2A
+                                : idx === 0
+                                  ? calc.prizeR1B
+                                  : calc.prizeR2B}
+                            </td>
+                          </tr>
                         </tbody>
                       </table>
                     </div>
@@ -251,23 +699,102 @@ const JurorView = ({ role, data, setData, onSave, onBack, isSyncing }) => {
           </section>
         ))}
         {/* VIDEOCLIP */}
-        <section className="col-12"><div className="card shadow-sm border-0"><div className="card-header text-white fw-bold">VIDEOCLIP (1-8 pts | Premio: 15 pts)</div><div className="card-body"><div className="row g-4">{['A', 'B'].map(team => (<div className="col-md-6" key={team}><h6>{team==='A'?data.header.teamA:data.header.teamB}</h6><table className="table table-sm table-bordered text-center"><tbody>{[{k:'cordinacion coreografica',l:'Coordinación coreográfica'},{k:'composicion coreografica',l:'composicion coreografica'},{k:'adaptacion al tiempo musical',l:'Adaptación al tiempo musical'},{k:'uso del espacio',l:'Uso del espacio'},{k:'impacto visual',l:'Impacto visual'},{k:'carisma',l:'Carisma'}].map(c=>(<tr key={c.k}><td className="text-start small">{c.l}</td><td><input type="number" className="form-control form-control-sm text-center mx-auto" value={data.videoclip[team][c.k]} onChange={(e)=>handleScoreChange('videoclip',team,c.k,e.target.value,8)} /></td></tr>))}<tr className="table-warning"><td>Suma</td><td>{team==='A'?calc.sumVidA:calc.sumVidB}</td></tr><tr className="table-success"><td>Premio</td><td>{team==='A'?calc.prizeVidA:calc.prizeVidB}</td></tr></tbody></table></div>))}</div></div></div></section>
+        <section className="col-12">
+          <div className="card shadow-sm border-0">
+            <div className="card-header text-white fw-bold">
+              VIDEOCLIP (1-8 pts | 15 pts)
+            </div>
+            <div className="card-body">
+              <div className="row g-4">
+                {["A", "B"].map((team) => (
+                  <div className="col-md-6" key={team}>
+                    <h6>{team === "A" ? config.teamA : config.teamB}</h6>
+                    <table className="table table-sm table-bordered text-center">
+                      <tbody>
+                        {[
+                          {
+                            k: "cordinacion coreografica",
+                            l: "Coordinación coreográfica",
+                          },
+                          {
+                            k: "composicion coreografica",
+                            l: "composicion coreografica",
+                          },
+                          {
+                            k: "adaptacion al tiempo musical",
+                            l: "Adaptación al tiempo musical",
+                          },
+                          { k: "uso del espacio", l: "Uso del espacio" },
+                          { k: "impacto visual", l: "Impacto visual" },
+                          { k: "carisma", l: "Carisma" },
+                        ].map((c) => (
+                          <tr key={c.k}>
+                            <td className="text-start small">{c.l}</td>
+                            <td>
+                              <input
+                                type="number"
+                                className="form-control form-control-sm text-center mx-auto"
+                                value={data.videoclip[team][c.k]}
+                                onChange={(e) =>
+                                  handleScoreChange(
+                                    "videoclip",
+                                    team,
+                                    c.k,
+                                    e.target.value,
+                                    8,
+                                  )
+                                }
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="table-warning">
+                          <td>Suma</td>
+                          <td>{team === "A" ? calc.sumVidA : calc.sumVidB}</td>
+                        </tr>
+                        <tr className="table-success">
+                          <td>Ganador Video Clip</td>
+                          <td>
+                            {team === "A" ? calc.prizeVidA : calc.prizeVidB}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="fixed-bottom py-3 px-4">
         <div className="container-fluid d-flex justify-content-between align-items-center">
           <div className="d-flex gap-4 align-items-center">
             <div className="text-center">
-              <div className="small text-uppercase opacity-50 fw-bold" style={{ fontSize: '0.65rem' }}>{data.header.teamA}</div>
+              <div
+                className="small text-uppercase opacity-50 fw-bold"
+                style={{ fontSize: "0.65rem" }}
+              >
+                {config.teamA}
+              </div>
               <div className="h5 m-0 fw-bold text-primary">{calc.totalA}</div>
             </div>
             <div className="vr h-100 opacity-25"></div>
             <div className="text-center">
-              <div className="small text-uppercase opacity-50 fw-bold" style={{ fontSize: '0.65rem' }}>{data.header.teamB}</div>
+              <div
+                className="small text-uppercase opacity-50 fw-bold"
+                style={{ fontSize: "0.65rem" }}
+              >
+                {config.teamB}
+              </div>
               <div className="h5 m-0 fw-bold text-primary">{calc.totalB}</div>
             </div>
           </div>
-          <button className="btn btn-success px-5 py-2 fw-bold shadow-sm" onClick={onSave}>
+          <button
+            className="btn btn-success px-5 py-2 fw-bold shadow-sm"
+            onClick={onSave}
+          >
             🚀 ENVIAR RESULTADOS
           </button>
         </div>
@@ -276,37 +803,572 @@ const JurorView = ({ role, data, setData, onSave, onBack, isSyncing }) => {
   );
 };
 
-const AdminView = ({ db, onBack, onReset }) => {
-  const jurorWithNames = Object.values(db).find(p => p && p.header && p.header.teamA !== 'Equipo A') || { header: { teamA: 'Equipo A', teamB: 'Equipo B' } };
-  const teamA = jurorWithNames.header.teamA;
-  const teamB = jurorWithNames.header.teamB;
+const CategoryWinnerCard = ({ label, a, b, teamA, teamB }) => {
+  const winner = a === b ? (a > 0 ? "EMPATE" : null) : a > b ? teamA : teamB;
+  return (
+    <div
+      className="card border-0 shadow-lg text-white mb-3"
+      style={{
+        background: "linear-gradient(135deg, #2c3e50, #000000)",
+        borderRadius: "20px",
+        overflow: "hidden",
+        minHeight: "180px",
+      }}
+    >
+      <div className="card-body p-3 d-flex flex-column justify-content-between text-center">
+        <div
+          className="small text-uppercase opacity-75 fw-bold mb-2"
+          style={{ fontSize: "0.7rem", letterSpacing: "1px" }}
+        >
+          {label}
+        </div>
 
-  const jurors = [{id:'juror1',label:'Jurado 1'},{id:'juror2',label:'Jurado 2'},{id:'juror3',label:'Jurado 3'}];
-  const submitted = jurors.filter(j => db[j.id]?.submitted);
-  const totalA = submitted.reduce((acc, j) => acc + calculateFinal(db[j.id]).totalA, 0);
-  const totalB = submitted.reduce((acc, j) => acc + calculateFinal(db[j.id]).totalB, 0);
+        <div className="d-flex align-items-center justify-content-around my-2">
+          <div>
+            <div className="h2 m-0 fw-bold" style={{ color: "#ff9800" }}>
+              {a}
+            </div>
+            <div
+              className="small opacity-50 fw-bold"
+              style={{ fontSize: "0.6rem" }}
+            >
+              {teamA}
+            </div>
+          </div>
+          <div className="opacity-25 fw-bold small">VS</div>
+          <div>
+            <div className="h2 m-0 fw-bold" style={{ color: "#ff9800" }}>
+              {b}
+            </div>
+            <div
+              className="small opacity-50 fw-bold"
+              style={{ fontSize: "0.6rem" }}
+            >
+              {teamB}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-2">
+          {winner ? (
+            <div
+              className="py-1 px-2 rounded-pill shadow-sm d-inline-block w-100"
+              style={{
+                background: "linear-gradient(to right, #ba8b02, #ffd700)",
+                color: "#000",
+                fontSize: "0.75rem",
+                fontWeight: "900",
+              }}
+            >
+              🏆 {winner === "EMPATE" ? "EMPATE" : `GANADOR: ${winner}`}
+            </div>
+          ) : (
+            <div
+              className="py-1 px-2 rounded-pill border border-secondary opacity-25 d-inline-block w-100"
+              style={{ fontSize: "0.75rem" }}
+            >
+              PENDIENTE
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AdminView = ({ db, onBack, onReset, config }) => {
+  const teamA = config.teamA;
+  const teamB = config.teamB;
+  const jurors = [
+    { id: "juror1", label: config.jurors.juror1 },
+    { id: "juror2", label: config.jurors.juror2 },
+    { id: "juror3", label: config.jurors.juror3 },
+  ];
+
+  const [editConfig, setEditConfig] = useState(config);
+  const [isSaving, setIsSaving] = useState(false);
+  const [announcement, setAnnouncement] = useState(null);
+  const announcedRef = useRef({});
+
+  const { totalA, totalB, breakdown } = calculateConsensus(db, jurors);
+
+  useEffect(() => {
+    const categories = [
+      {
+        id: "pop",
+        label: "Ganador Popurrí Alternativo",
+        a: breakdown.popA,
+        b: breakdown.popB,
+      },
+      {
+        id: "mas",
+        label: "Ganador Popurrí Mascota",
+        a: breakdown.masA,
+        b: breakdown.masB,
+      },
+      {
+        id: "r1",
+        label: "Ganador Ritmo 1",
+        a: breakdown.r1A,
+        b: breakdown.r1B,
+      },
+      {
+        id: "r2",
+        label: "Ganador Ritmo 2",
+        a: breakdown.r2A,
+        b: breakdown.r2B,
+      },
+      {
+        id: "vid",
+        label: "Ganador Video Clip",
+        a: breakdown.vidA,
+        b: breakdown.vidB,
+      },
+    ];
+
+    categories.forEach((cat) => {
+      const winner = cat.a === cat.b ? null : cat.a > cat.b ? teamA : teamB;
+      if (winner && !announcedRef.current[cat.id]) {
+        announcedRef.current[cat.id] = true;
+        setAnnouncement({ winner, category: cat.label });
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#ff9800", "#ffffff", "#ffd700"],
+        });
+        setTimeout(() => setAnnouncement(null), 5000);
+      }
+    });
+  }, [breakdown, teamA, teamB]);
+
+  const handleSaveConfig = async () => {
+    setIsSaving(true);
+    await supabase
+      .from("jornadas_scores")
+      .upsert({
+        juror_id: "config",
+        payload: editConfig,
+        updated_at: new Date(),
+      });
+    setIsSaving(false);
+    alert("Configuración actualizada y sincronizada.");
+  };
+
+  const generatePDF = () => {
+    console.log("Iniciando generación de PDF...");
+    try {
+      const doc = new jsPDF();
+
+      // Header
+      doc.setFontSize(22);
+      doc.setTextColor(40, 40, 40);
+      doc.text("Jornadas Estudiantiles 2026", 105, 20, { align: "center" });
+
+      doc.setFontSize(14);
+      doc.text(
+        `Comprobante de Resultados - Encuentro #${config.matchNo}`,
+        105,
+        30,
+        { align: "center" },
+      );
+      doc.line(20, 35, 190, 35);
+
+      // Match Info
+      doc.setFontSize(12);
+      doc.text(`Encuentro: #${config.matchNo}`, 20, 45);
+      doc.text(
+        `Fecha: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+        130,
+        45,
+      );
+
+      doc.setFontSize(16);
+      doc.text(`${teamA} vs ${teamB}`, 105, 55, { align: "center" });
+
+      // Individual Juror Table
+      const jurorRows = jurors.map((j) => {
+        const results = db[j.id] ? calculateFinal(db[j.id]) : null;
+        return [
+          j.label,
+          results ? results.totalA : "-",
+          results ? results.totalB : "-",
+          db[j.id]?.submitted ? "ENVIADO" : "PENDIENTE",
+        ];
+      });
+
+      autoTable(doc, {
+        startY: 65,
+        head: [["Jurado", `Puntos ${teamA}`, `Puntos ${teamB}`, "Estado"]],
+        body: jurorRows,
+        theme: "striped",
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      });
+
+      const consensus = calculateConsensus(db, jurors);
+      const winner =
+        consensus.totalA === consensus.totalB
+          ? "EMPATE"
+          : consensus.totalA > consensus.totalB
+            ? teamA
+            : teamB;
+      const nextY =
+        doc.lastAutoTable && doc.lastAutoTable.finalY
+          ? doc.lastAutoTable.finalY + 15
+          : 120;
+
+      autoTable(doc, {
+        startY: nextY,
+        head: [["RESULTADO FINAL (CONSENSO)", teamA, teamB, "GANADOR"]],
+        body: [
+          [
+            "PUNTAJE FINAL VALIDADO",
+            consensus.totalA.toString(),
+            consensus.totalB.toString(),
+            {
+              content: winner,
+              styles: { fontStyle: "bold", textColor: [39, 174, 96] },
+            },
+          ],
+        ],
+        theme: "grid",
+        headStyles: { fillColor: [44, 62, 80], textColor: 255 },
+        styles: { fontSize: 14 },
+      });
+
+      doc.setFontSize(10);
+      doc.setTextColor(150);
+      doc.text(
+        "Este documento es un comprobante digital generado por el sistema de puntuación.",
+        105,
+        280,
+        { align: "center" },
+      );
+      doc.save(
+        `Resultado_Encuentro_${config.matchNo}_${teamA}_vs_${teamB}.pdf`,
+      );
+    } catch (error) {
+      console.error("Error al generar el PDF:", error);
+      alert("Hubo un error al generar el PDF.");
+    }
+  };
+
+  // Removed duplicate declarations here
 
   return (
     <div className="container py-5">
-      <div className="d-flex justify-content-between mb-4"><button className="btn btn-outline-secondary btn-sm" onClick={onBack}>Volver</button><button className="btn btn-danger btn-sm" onClick={onReset}>🧹 Limpiar Evento</button></div>
-      <h2 className="text-center fw-bold mb-5 text-uppercase">Resultados de {teamA} vs {teamB}</h2>
-      <div className="row g-4 mb-5">
-        {jurors.map(j => (<div className="col-md-4" key={j.id}><div className={`card shadow-sm border-0 p-3 text-center ${db[j.id]?.submitted ? 'border-top border-success border-4':'opacity-50'}`}><h6>{j.label}</h6><b>{teamA}: {db[j.id]?calculateFinal(db[j.id]).totalA:'-'} | {teamB}: {db[j.id]?calculateFinal(db[j.id]).totalB:'-'}</b></div></div>))}
+      <div className="d-flex justify-content-between mb-4">
+        <button className="btn btn-outline-secondary btn-sm" onClick={onBack}>
+          Volver
+        </button>
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-info btn-sm text-white fw-bold px-3"
+            onClick={generatePDF}
+          >
+            📥 Descargar Comprobante PDF
+          </button>
+          <button className="btn btn-danger btn-sm" onClick={onReset}>
+            🧹 Limpiar Evento
+          </button>
+        </div>
       </div>
-      <div className="card shadow-lg bg-dark bg-opacity-75 text-white p-5 text-center border-0 backdrop-blur" style={{borderRadius:'30px'}}>
+
+      <div
+        className="card shadow-sm border-0 p-4 mb-5"
+        style={{ borderRadius: "20px", background: "rgba(255,255,255,0.05)" }}
+      >
+        <h4 className="fw-bold mb-4 text-primary">⚙️ Ajustes del Encuentro</h4>
+        <div className="row g-3">
+          <div className="col-md-2">
+            <label className="form-label small fw-bold">N° Encuentro</label>
+            <input
+              type="text"
+              className="form-control"
+              value={editConfig.matchNo}
+              onChange={(e) =>
+                setEditConfig({ ...editConfig, matchNo: e.target.value })
+              }
+            />
+          </div>
+          <div className="col-md-5">
+            <label className="form-label small fw-bold">Nombre Equipo A</label>
+            <input
+              type="text"
+              className="form-control"
+              value={editConfig.teamA}
+              onChange={(e) =>
+                setEditConfig({ ...editConfig, teamA: e.target.value })
+              }
+            />
+          </div>
+          <div className="col-md-5">
+            <label className="form-label small fw-bold">Nombre Equipo B</label>
+            <input
+              type="text"
+              className="form-control"
+              value={editConfig.teamB}
+              onChange={(e) =>
+                setEditConfig({ ...editConfig, teamB: e.target.value })
+              }
+            />
+          </div>
+          {["juror1", "juror2", "juror3"].map((id, i) => (
+            <div className="col-md-4" key={id}>
+              <label className="form-label small fw-bold">
+                Nombre Jurado {i + 1}
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                value={editConfig.jurors[id]}
+                onChange={(e) =>
+                  setEditConfig({
+                    ...editConfig,
+                    jurors: { ...editConfig.jurors, [id]: e.target.value },
+                  })
+                }
+              />
+            </div>
+          ))}
+          <div className="col-12 mt-3">
+            <button
+              className="btn btn-primary w-100 fw-bold"
+              onClick={handleSaveConfig}
+              disabled={isSaving}
+            >
+              {isSaving ? "Guardando..." : "💾 Guardar y Sincronizar Nombres"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <h2 className="text-center fw-bold mb-5 text-uppercase tracking-tighter">
+        Tablero de Resultados: {teamA} vs {teamB}
+      </h2>
+
+      {/* Visual Cards Grid - Vertical List */}
+      <div className="row justify-content-center mb-5">
+        <div className="col-lg-6 col-md-8">
+          {(breakdown.individualGames || []).map((win, i) => (
+            <div className="mb-4" key={`card-juego-${i}`}>
+              <CategoryWinnerCard
+                label={`Juego #${i + 1}`}
+                a={win === "A" ? 6 : 0}
+                b={win === "B" ? 6 : 0}
+                teamA={teamA}
+                teamB={teamB}
+              />
+            </div>
+          ))}
+          {[
+            {
+              label: "Popurrí Alternativo",
+              a: breakdown.popA,
+              b: breakdown.popB,
+            },
+            { label: "Popurrí Mascota", a: breakdown.masA, b: breakdown.masB },
+            { label: "Ritmo 1", a: breakdown.r1A, b: breakdown.r1B },
+            { label: "Ritmo 2", a: breakdown.r2A, b: breakdown.r2B },
+            { label: "Video Clip", a: breakdown.vidA, b: breakdown.vidB },
+          ].map((cat, i) => (
+            <div className="mb-4" key={`card-cat-${i}`}>
+              <CategoryWinnerCard
+                label={cat.label}
+                a={cat.a}
+                b={cat.b}
+                teamA={teamA}
+                teamB={teamB}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="row g-4 mb-5">
+        <div className="col-lg-8">
+          <div
+            className="card shadow border-0 h-100"
+            style={{ borderRadius: "20px", overflow: "hidden" }}
+          >
+            <div className="card-header bg-primary text-white py-3 fw-bold text-center text-uppercase tracking-wider">
+              Puntaje en Vivo por Categoría
+            </div>
+            <div className="card-body p-0">
+              <table className="table table-hover m-0 align-middle text-center">
+                <thead className="table-light">
+                  <tr>
+                    <th className="text-start ps-4">Categoría</th>
+                    <th>{teamA}</th>
+                    <th>{teamB}</th>
+                    <th>Ganador</th>
+                  </tr>
+                </thead>
+                <tbody className="fw-bold">
+                  {[
+                    {
+                      label: "Juegos",
+                      a: breakdown.juegosA,
+                      b: breakdown.juegosB,
+                    },
+                    {
+                      label: "Ganador Popurrí Alternativo",
+                      a: breakdown.popA,
+                      b: breakdown.popB,
+                    },
+                    {
+                      label: "Ganador Popurrí Mascota",
+                      a: breakdown.masA,
+                      b: breakdown.masB,
+                    },
+                    {
+                      label: "Ganador Ritmo 1",
+                      a: breakdown.r1A,
+                      b: breakdown.r1B,
+                    },
+                    {
+                      label: "Ganador Ritmo 2",
+                      a: breakdown.r2A,
+                      b: breakdown.r2B,
+                    },
+                    {
+                      label: "Ganador Video Clip",
+                      a: breakdown.vidA,
+                      b: breakdown.vidB,
+                    },
+                  ].map((row, i) => {
+                    const rowWinner =
+                      row.a === row.b
+                        ? row.a > 0
+                          ? "EMPATE"
+                          : "-"
+                        : row.a > row.b
+                          ? teamA
+                          : teamB;
+                    return (
+                      <tr key={i}>
+                        <td className="text-start ps-4 opacity-75">
+                          {row.label}
+                        </td>
+                        <td style={{ color: "#ffb74d" }}>{row.a}</td>
+                        <td style={{ color: "#ffb74d" }}>{row.b}</td>
+                        <td>
+                          <span
+                            className={`badge ${rowWinner === teamA || rowWinner === teamB ? "bg-success" : "bg-secondary"} px-3`}
+                          >
+                            {rowWinner}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="table-dark">
+                  <tr>
+                    <td className="text-start ps-4">TOTAL ACUMULADO</td>
+                    <td className="h4 m-0" style={{ color: "#ff9800" }}>
+                      {totalA}
+                    </td>
+                    <td className="h4 m-0" style={{ color: "#ff9800" }}>
+                      {totalB}
+                    </td>
+                    <td className="text-info">
+                      {totalA === totalB
+                        ? "EMPATE"
+                        : totalA > totalB
+                          ? teamA
+                          : teamB}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-4">
+          <div className="d-flex flex-column gap-3 h-100">
+            {jurors.map((j) => (
+              <div
+                key={j.id}
+                className={`card shadow-sm border-0 p-3 text-center flex-grow-1 d-flex flex-column justify-content-center ${db[j.id]?.submitted ? "border-start border-success border-5" : "opacity-50"}`}
+              >
+                <h6 className="mb-1">{j.label}</h6>
+                <div className="small text-uppercase opacity-50 mb-2">
+                  {db[j.id]?.submitted ? "✅ Recibido" : "⏳ Pendiente"}
+                </div>
+                <b className="h5 mb-0">
+                  {teamA}: {db[j.id] ? calculateFinal(db[j.id]).totalA : "-"} |{" "}
+                  {teamB}: {db[j.id] ? calculateFinal(db[j.id]).totalB : "-"}
+                </b>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="card shadow-lg bg-dark bg-opacity-75 text-white p-5 text-center border-0 backdrop-blur"
+        style={{
+          borderRadius: "30px",
+          background: "linear-gradient(135deg, #1a1a1a, #2c3e50)",
+        }}
+      >
         <div className="row justify-content-center align-items-center">
-          <div className="col-md-5"><div className="display-1 fw-bold text-info">{totalA}</div><h4 className="text-uppercase">{teamA}</h4></div>
+          <div className="col-md-5">
+            <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
+              {totalA}
+            </div>
+            <h4 className="text-uppercase">{teamA}</h4>
+          </div>
           <div className="col-md-2 display-4 opacity-25">VS</div>
-          <div className="col-md-5"><div className="display-1 fw-bold text-info">{totalB}</div><h4 className="text-uppercase">{teamB}</h4></div>
+          <div className="col-md-5">
+            <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
+              {totalB}
+            </div>
+            <h4 className="text-uppercase">{teamB}</h4>
+          </div>
         </div>
         <div className="mt-5">
           <div className="winner-badge shadow-lg">
             <h2 className="m-0 fw-bolder text-uppercase tracking-tighter">
-              🏆 GANADOR: {totalA === totalB ? 'EMPATE' : (totalA > totalB ? teamA : teamB)}
+              🏆 GANADOR:{" "}
+              {totalA === totalB ? "EMPATE" : totalA > totalB ? teamA : teamB}
             </h2>
           </div>
         </div>
       </div>
+
+      {announcement && (
+        <div className="announcement-overlay d-flex align-items-center justify-content-center text-center">
+          <div className="announcement-card p-5 shadow-lg border-0 bg-dark text-white rounded-5 animate__animated animate__zoomIn">
+            <div className="display-4 mb-3">🎊 ¡TENEMOS GANADOR! 🎊</div>
+            <h1
+              className="display-1 fw-bolder mb-3"
+              style={{ color: "#ff9800" }}
+            >
+              {announcement.winner}
+            </h1>
+            <h3 className="text-uppercase tracking-widest opacity-75">
+              ha ganado la categoría de
+            </h3>
+            <div className="h2 mt-3 fw-bold text-info">
+              {announcement.category}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .announcement-overlay {
+          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+          background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+          z-index: 9999; animation: fadeIn 0.5s ease;
+        }
+        .announcement-card { border: 2px solid #ff9800 !important; max-width: 800px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate__zoomIn { animation: zoomIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes zoomIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      `}</style>
     </div>
   );
 };

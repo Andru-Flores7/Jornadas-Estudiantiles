@@ -157,6 +157,7 @@ const calculateConsensus = (db, jurors) => {
       breakdown: {
         juegosA: 0,
         juegosB: 0,
+        individualGames: [null, null, null],
         popA: 0,
         popB: 0,
         masA: 0,

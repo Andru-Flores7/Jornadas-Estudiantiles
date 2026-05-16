@@ -625,7 +625,7 @@ const JurorView = ({
           <section className="col-lg-6" key={rit}>
             <div className="card shadow-sm border-0">
               <div className="card-header text-white fw-bold">
-                POPURRÍ ALTERNATIVO RITMO {idx + 1} (SE CALIFICA DEL 1 AL 5 CADA ITEM | 4 pts)
+                POPURRÍ SELECCIONADO <em>RITMO {idx + 1}</em> (SE CALIFICA DEL 1 AL 5 CADA ITEM | 4 pts)
               </div>
               <div className="card-body">
                 <div className="row g-3">
@@ -1113,8 +1113,8 @@ const AdminView = ({ db, onBack, onReset, config }) => {
               b: breakdown.popB,
             },
             { label: "Popurrí Mascota", a: breakdown.masA, b: breakdown.masB },
-            { label: "Ritmo 1", a: breakdown.r1A, b: breakdown.r1B },
-            { label: "Ritmo 2", a: breakdown.r2A, b: breakdown.r2B },
+            { label: "Popurrí Seleccionado Ritmo 1", a: breakdown.r1A, b: breakdown.r1B },
+            { label: "Popurrí Seleccionado Ritmo 2", a: breakdown.r2A, b: breakdown.r2B },
             { label: "Video Clip", a: breakdown.vidA, b: breakdown.vidB },
           ].map((cat, i) => (
             <div className="mb-4" key={`card-cat-${i}`}>
@@ -1168,12 +1168,12 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       b: breakdown.masB,
                     },
                     {
-                      label: "Ganador Ritmo 1",
+                      label: "Ganador Popurrí Selec. Ritmo 1",
                       a: breakdown.r1A,
                       b: breakdown.r1B,
                     },
                     {
-                      label: "Ganador Ritmo 2",
+                      label: "Ganador Popurrí Selec. Ritmo 2",
                       a: breakdown.r2A,
                       b: breakdown.r2B,
                     },

@@ -11,7 +11,7 @@ const createInitialJurorState = () => ({
   submitted: false,
   header: { jury: "", matchNo: "", teamA: "Equipo A", teamB: "Equipo B" },
   juegos: Array(3).fill(null),
-  popurri: Array(10).fill(null),
+  popurri: Array(11).fill(null),
   mascota: Array(4).fill(null),
   ritmo1: {
     A: {
@@ -551,7 +551,7 @@ const JurorView = ({
                 <thead>
                   <tr>
                     <th>Equipo</th>
-                    {[...Array(10)].map((_, i) => (
+                    {[...Array(11)].map((_, i) => (
                       <th key={i}>{i + 1}</th>
                     ))}
                     <th>Ganador Popurrí Alternativo</th>

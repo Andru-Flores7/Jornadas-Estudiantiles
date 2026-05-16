@@ -625,7 +625,7 @@ const JurorView = ({
           <section className="col-lg-6" key={rit}>
             <div className="card shadow-sm border-0">
               <div className="card-header text-white fw-bold">
-                POPURRÍ SELECCIONADO <em>RITMO {idx + 1}</em> (SE CALIFICA DEL 1 AL 5 CADA ITEM | 4 pts)
+                POPURRÍ SELECCIONADO <em>RITMO {idx + 1}</em> (SE CALIFICA DEL 1 AL 5 CADA ITEM) | 4 pts
               </div>
               <div className="card-body">
                 <div className="row g-3">
@@ -699,7 +699,7 @@ const JurorView = ({
         <section className="col-12">
           <div className="card shadow-sm border-0">
             <div className="card-header text-white fw-bold">
-              VIDEOCLIP (SE CALIFICA DEL 1 AL 8 CADA ITEM | 15 pts)
+              VIDEOCLIP (SE CALIFICA DEL 1 AL 8 CADA ITEM) | 15 pts
             </div>
             <div className="card-body">
               <div className="row g-4">

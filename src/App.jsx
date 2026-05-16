@@ -51,7 +51,7 @@ const createInitialJurorState = () => ({
       "composicion coreografica": "",
       "adaptacion al tiempo musical": "",
       "uso del espacio": "",
-      "impacto visual": "",
+      "trabajo en equipo": "",
       carisma: "",
     },
     B: {
@@ -59,7 +59,7 @@ const createInitialJurorState = () => ({
       "composicion coreografica": "",
       "adaptacion al tiempo musical": "",
       "uso del espacio": "",
-      "impacto visual": "",
+      "trabajo en equipo": "",
       carisma: "",
     },
   },
@@ -418,12 +418,25 @@ const JurorView = ({
   const calc = useMemo(() => calculateFinal(data), [data]);
 
   const handleScoreChange = (section, team, criterion, value, max) => {
-    if (value === "" || (Number(value) >= 1 && Number(value) <= max)) {
+    // Permitir vacío para borrar
+    if (value === "") {
       setData({
         ...data,
         [section]: {
           ...data[section],
-          [team]: { ...data[section][team], [criterion]: value },
+          [team]: { ...data[section][team], [criterion]: "" },
+        },
+      });
+      return;
+    }
+
+    const val = parseInt(value, 10);
+    if (!isNaN(val) && val >= 1 && val <= max) {
+      setData({
+        ...data,
+        [section]: {
+          ...data[section],
+          [team]: { ...data[section][team], [criterion]: val.toString() },
         },
       });
     }
@@ -648,20 +661,22 @@ const JurorView = ({
                                 {c}
                               </td>
                               <td>
-                                <input
-                                  type="number"
-                                  className="form-control form-control-sm text-center mx-auto"
-                                  value={data[rit][team][c]}
-                                  onChange={(e) =>
-                                    handleScoreChange(
-                                      rit,
-                                      team,
-                                      c,
-                                      e.target.value,
-                                      5,
-                                    )
-                                  }
-                                />
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="5"
+                                    className="form-control form-control-sm text-center mx-auto"
+                                    value={data[rit][team][c]}
+                                    onChange={(e) =>
+                                      handleScoreChange(
+                                        rit,
+                                        team,
+                                        c,
+                                        e.target.value,
+                                        5,
+                                      )
+                                    }
+                                  />
                               </td>
                             </tr>
                           ))}
@@ -722,7 +737,7 @@ const JurorView = ({
                             l: "Adaptación al tiempo musical",
                           },
                           { k: "uso del espacio", l: "Uso del espacio" },
-                          { k: "impacto visual", l: "Impacto visual" },
+                          { k: "trabajo en equipo", l: "Trabajo en equipo" },
                           { k: "carisma", l: "Carisma" },
                         ].map((c) => (
                           <tr key={c.k}>
@@ -730,6 +745,8 @@ const JurorView = ({
                             <td>
                               <input
                                 type="number"
+                                min="1"
+                                max="8"
                                 className="form-control form-control-sm text-center mx-auto"
                                 value={data.videoclip[team][c.k]}
                                 onChange={(e) =>

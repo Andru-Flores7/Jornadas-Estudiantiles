@@ -730,7 +730,7 @@ const JurorView = ({
                           },
                           {
                             k: "composicion coreografica",
-                            l: "composicion coreografica",
+                            l: "Composicion coreografica",
                           },
                           {
                             k: "adaptacion al tiempo musical",

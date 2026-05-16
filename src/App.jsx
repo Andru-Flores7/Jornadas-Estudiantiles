@@ -625,7 +625,7 @@ const JurorView = ({
           <section className="col-lg-6" key={rit}>
             <div className="card shadow-sm border-0">
               <div className="card-header text-white fw-bold">
-                POPURRÍ ALTERNATIVO RITMO {idx + 1} (1-5 pts | 4 pts)
+                POPURRÍ ALTERNATIVO RITMO {idx + 1} (SE CALIFICA DEL 1 AL 5 CADA ITEM | 4 pts)
               </div>
               <div className="card-body">
                 <div className="row g-3">
@@ -637,11 +637,11 @@ const JurorView = ({
                       <table className="table table-sm table-bordered text-center">
                         <tbody>
                           {[
-                            "vestimenta",
-                            "originalidad",
-                            "desplazamiento",
-                            "coordinacion",
-                            "conexion en pareja",
+                            "Vestimenta",
+                            "Originalidad",
+                            "Desplazamiento",
+                            "Coordinacion",
+                            "Conexion en pareja",
                           ].map((c) => (
                             <tr key={c}>
                               <td className="text-start small opacity-75">
@@ -699,7 +699,7 @@ const JurorView = ({
         <section className="col-12">
           <div className="card shadow-sm border-0">
             <div className="card-header text-white fw-bold">
-              VIDEOCLIP (1-8 pts | 15 pts)
+              VIDEOCLIP (SE CALIFICA DEL 1 AL 8 CADA ITEM | 15 pts)
             </div>
             <div className="card-body">
               <div className="row g-4">

@@ -832,46 +832,46 @@ const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
     >
       <div className="card-body p-3 d-flex flex-column justify-content-between text-center">
         <div
-          className="small text-uppercase opacity-75 fw-bold mb-2"
-          style={{ fontSize: "0.7rem", letterSpacing: "1px" }}
+          className="text-uppercase opacity-75 fw-bold mb-3 mt-2"
+          style={{ fontSize: "clamp(1rem, 1.5vw, 1.4rem)", letterSpacing: "2px" }}
         >
           {label}
         </div>
 
-        <div className="d-flex align-items-center justify-content-around my-2">
-          <div>
-            <div className="h2 m-0 fw-bold" style={{ color: "#ff9800" }}>
+        <div className="d-flex align-items-center justify-content-around my-3">
+          <div className="text-center" style={{ flex: 1 }}>
+            <div className="m-0 fw-bold" style={{ color: "#ff9800", fontSize: "clamp(3rem, 5vw, 4.5rem)", lineHeight: "1" }}>
               {a}
             </div>
             <div
-              className="small opacity-50 fw-bold"
-              style={{ fontSize: "0.6rem" }}
+              className="opacity-75 fw-bold mt-2 px-2"
+              style={{ fontSize: "clamp(0.85rem, 1vw, 1.1rem)" }}
             >
               {teamA}
             </div>
           </div>
-          <div className="opacity-25 fw-bold small">VS</div>
-          <div>
-            <div className="h2 m-0 fw-bold" style={{ color: "#ff9800" }}>
+          <div className="opacity-25 fw-bold mx-2" style={{ fontSize: "clamp(1.5rem, 2vw, 2rem)" }}>VS</div>
+          <div className="text-center" style={{ flex: 1 }}>
+            <div className="m-0 fw-bold" style={{ color: "#ff9800", fontSize: "clamp(3rem, 5vw, 4.5rem)", lineHeight: "1" }}>
               {b}
             </div>
             <div
-              className="small opacity-50 fw-bold"
-              style={{ fontSize: "0.6rem" }}
+              className="opacity-75 fw-bold mt-2 px-2"
+              style={{ fontSize: "clamp(0.85rem, 1vw, 1.1rem)" }}
             >
               {teamB}
             </div>
           </div>
         </div>
 
-        <div className="mt-2">
+        <div className="mt-3 mb-2 px-2">
           {winner ? (
             <div
-              className="py-1 px-2 rounded-pill shadow-sm d-inline-block w-100"
+              className="py-2 px-3 rounded-pill shadow-sm d-inline-block w-100"
               style={{
                 background: "linear-gradient(to right, #ba8b02, #ffd700)",
                 color: "#000",
-                fontSize: "0.75rem",
+                fontSize: "clamp(0.9rem, 1.2vw, 1.2rem)",
                 fontWeight: "900",
               }}
             >
@@ -879,8 +879,8 @@ const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
             </div>
           ) : (
             <div
-              className="py-1 px-2 rounded-pill border border-secondary opacity-25 d-inline-block w-100"
-              style={{ fontSize: "0.75rem" }}
+              className="py-2 px-3 rounded-pill border border-secondary opacity-25 d-inline-block w-100"
+              style={{ fontSize: "clamp(0.9rem, 1.2vw, 1.2rem)" }}
             >
               PENDIENTE
             </div>
@@ -903,6 +903,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
   const [editConfig, setEditConfig] = useState(config);
   const [isSaving, setIsSaving] = useState(false);
   const { totalA, totalB, breakdown } = calculateConsensus(db, jurors);
+  const allVoted = jurors.every((j) => db[j.id]?.submitted);
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
@@ -1116,10 +1117,11 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             <div className="mb-4" key={`card-juego-${i}`}>
               <CategoryWinnerCard
                 label={`Juego #${i + 1}`}
-                a={win === "A" ? 6 : 0}
-                b={win === "B" ? 6 : 0}
+                a={allVoted ? (win === "A" ? 6 : 0) : "-"}
+                b={allVoted ? (win === "B" ? 6 : 0) : "-"}
                 teamA={teamA}
                 teamB={teamB}
+                hasData={allVoted}
               />
             </div>
           ))}
@@ -1137,11 +1139,11 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             <div className="mb-4" key={`card-cat-${i}`}>
               <CategoryWinnerCard
                 label={cat.label}
-                a={cat.a}
-                b={cat.b}
+                a={allVoted ? cat.a : "-"}
+                b={allVoted ? cat.b : "-"}
                 teamA={teamA}
                 teamB={teamB}
-                hasData={jurors.some(j => db[j.id]?.submitted)}
+                hasData={allVoted}
               />
             </div>
           ))}
@@ -1200,11 +1202,10 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       b: breakdown.vidB,
                     },
                   ].map((row, i) => {
-                    const rowWinner =
-                      row.a === row.b
-                        ? row.a > 0
-                          ? "EMPATE"
-                          : "-"
+                    const rowWinner = !allVoted
+                      ? "PENDIENTE"
+                      : row.a === row.b
+                        ? "EMPATE"
                         : row.a > row.b
                           ? teamA
                           : teamB;
@@ -1213,11 +1214,17 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                         <td className="text-start ps-4 opacity-75">
                           {row.label}
                         </td>
-                        <td style={{ color: "#ffb74d" }}>{row.a}</td>
-                        <td style={{ color: "#ffb74d" }}>{row.b}</td>
+                        <td style={{ color: "#ffb74d" }}>{allVoted ? row.a : "-"}</td>
+                        <td style={{ color: "#ffb74d" }}>{allVoted ? row.b : "-"}</td>
                         <td>
                           <span
-                            className={`badge ${rowWinner === teamA || rowWinner === teamB ? "bg-success" : "bg-secondary"} px-3`}
+                            className={`badge ${
+                              rowWinner === teamA || rowWinner === teamB 
+                                ? "bg-success" 
+                                : rowWinner === "EMPATE" 
+                                  ? "bg-warning text-dark" 
+                                  : "bg-secondary"
+                            } px-3`}
                           >
                             {rowWinner}
                           </span>
@@ -1230,17 +1237,19 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                   <tr>
                     <td className="text-start ps-4">TOTAL ACUMULADO</td>
                     <td className="h4 m-0" style={{ color: "#ff9800" }}>
-                      {totalA}
+                      {allVoted ? totalA : "-"}
                     </td>
                     <td className="h4 m-0" style={{ color: "#ff9800" }}>
-                      {totalB}
+                      {allVoted ? totalB : "-"}
                     </td>
-                    <td className="text-info">
-                      {totalA === totalB
-                        ? "EMPATE"
-                        : totalA > totalB
-                          ? teamA
-                          : teamB}
+                    <td className={`fw-bold ${allVoted && totalA === totalB ? "text-warning" : "text-info"}`}>
+                      {!allVoted 
+                        ? "PENDIENTE" 
+                        : totalA === totalB
+                          ? "EMPATE"
+                          : totalA > totalB
+                            ? teamA
+                            : teamB}
                     </td>
                   </tr>
                 </tfoot>
@@ -1279,14 +1288,14 @@ const AdminView = ({ db, onBack, onReset, config }) => {
         <div className="row justify-content-center align-items-center">
           <div className="col-md-5">
             <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
-              {totalA}
+              {allVoted ? totalA : "-"}
             </div>
             <h4 className="text-uppercase">{teamA}</h4>
           </div>
           <div className="col-md-2 display-4 opacity-25">VS</div>
           <div className="col-md-5">
             <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
-              {totalB}
+              {allVoted ? totalB : "-"}
             </div>
             <h4 className="text-uppercase">{teamB}</h4>
           </div>
@@ -1294,8 +1303,12 @@ const AdminView = ({ db, onBack, onReset, config }) => {
         <div className="mt-5">
           <div className="winner-badge shadow-lg">
             <h2 className="m-0 fw-bolder text-uppercase tracking-tighter">
-              🏆 GANADOR:{" "}
-              {totalA === totalB ? "EMPATE" : totalA > totalB ? teamA : teamB}
+              {!allVoted 
+                ? "⏳ ESPERANDO JURADOS..."
+                : totalA === totalB 
+                  ? "⚖️ EMPATE" 
+                  : `🏆 GANADOR: ${totalA > totalB ? teamA : teamB}`
+              }
             </h2>
           </div>
         </div>

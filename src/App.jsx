@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "./supabase";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -315,6 +315,18 @@ const App = () => {
     const finalData = { ...jurorData, submitted: true };
     setJurorData(finalData);
     await syncToSupabase(finalData);
+    
+    // Efecto premium de confeti para celebrar el envío exitoso
+    try {
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+    } catch (err) {
+      console.warn("Confetti error:", err);
+    }
+
     alert("¡Resultados enviados con éxito!");
   };
 
@@ -921,6 +933,17 @@ const AdminView = ({ db, onBack, onReset, config }) => {
   const generatePDF = () => {
     console.log("Iniciando generación de PDF...");
     try {
+      // Lanzar confeti para celebrar la generación del acta oficial
+      try {
+        confetti({
+          particleCount: 200,
+          spread: 100,
+          origin: { y: 0.6 }
+        });
+      } catch (err) {
+        console.warn("Confetti error:", err);
+      }
+
       const doc = new jsPDF();
 
       // Header

@@ -1,4 +1,3 @@
-import React from 'react';
 import logoLeft from '../assets/1000760758-removebg-preview.png';
 import logoRight from '../assets/logo.png';
 const GlobalHeader = () => {

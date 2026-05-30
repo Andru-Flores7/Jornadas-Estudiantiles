@@ -12,7 +12,7 @@ const createInitialJurorState = () => ({
   header: { jury: "", matchNo: "", teamA: "Equipo A", teamB: "Equipo B" },
   juegos: Array(3).fill(null),
   popurri: Array(11).fill(null),
-  mascota: Array(4).fill(null),
+  mascota: Array(5).fill(null),
   ritmo1: {
     A: {
       vestimenta: "",
@@ -64,6 +64,28 @@ const createInitialJurorState = () => ({
     },
   },
 });
+
+const normalizePayload = (payload) => {
+  if (!payload) return payload;
+  
+  const newPayload = {
+    ...payload,
+    juegos: Array.isArray(payload.juegos) ? [...payload.juegos] : Array(3).fill(null),
+    popurri: Array.isArray(payload.popurri) ? [...payload.popurri] : Array(11).fill(null),
+  };
+
+  if (payload.mascota && Array.isArray(payload.mascota)) {
+    const newMascota = [...payload.mascota];
+    while (newMascota.length < 5) {
+      newMascota.push(null);
+    }
+    newPayload.mascota = newMascota.slice(0, 5);
+  } else {
+    newPayload.mascota = Array(5).fill(null);
+  }
+  
+  return newPayload;
+};
 
 const initialConfig = {
   teamA: "Equipo A",
@@ -248,7 +270,7 @@ const App = () => {
           if (row.juror_id === "config") {
             setConfig(row.payload);
           } else {
-            newDb[row.juror_id] = row.payload;
+            newDb[row.juror_id] = normalizePayload(row.payload);
           }
         });
         setDb(newDb);
@@ -281,7 +303,7 @@ const App = () => {
           if (newJurorId === "config") {
             setConfig(newPayload);
           } else {
-            setDb((prev) => ({ ...prev, [newJurorId]: newPayload }));
+            setDb((prev) => ({ ...prev, [newJurorId]: normalizePayload(newPayload) }));
           }
         },
       )
@@ -306,7 +328,7 @@ const App = () => {
         .select("payload")
         .eq("juror_id", selectedRole)
         .single();
-      if (data) setJurorData(data.payload);
+      if (data) setJurorData(normalizePayload(data.payload));
       else setJurorData(createInitialJurorState());
     }
   };
@@ -610,36 +632,43 @@ const JurorView = ({
                 <thead>
                   <tr>
                     <th>Equipo</th>
-                    {[...Array(4)].map((_, i) => (
+                    {[...Array(5)].map((_, i) => (
                       <th key={i}>{i + 1}</th>
                     ))}
                     <th>Ganador Popurrí Mascota</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {["A", "B"].map((team) => (
-                    <tr key={team}>
-                      <td>{team === "A" ? config.teamA : config.teamB}</td>
-                      {data.mascota.map((v, i) => (
-                        <td key={i}>
-                          <button
-                            className={`btn btn-sm ${v === team ? "btn-primary" : "btn-light"}`}
-                            style={{ width: "30px" }}
-                            onClick={() => {
-                              const n = [...data.mascota];
-                              n[i] = n[i] === team ? null : team;
-                              setData({ ...data, mascota: n });
-                            }}
-                          >
-                            X
-                          </button>
+                  {["A", "B"].map((team) => {
+                    const mascotaList = Array.isArray(data.mascota) ? [...data.mascota] : [];
+                    while (mascotaList.length < 5) {
+                      mascotaList.push(null);
+                    }
+                    const finalMascota = mascotaList.slice(0, 5);
+                    return (
+                      <tr key={team}>
+                        <td>{team === "A" ? config.teamA : config.teamB}</td>
+                        {finalMascota.map((v, i) => (
+                          <td key={i}>
+                            <button
+                              className={`btn btn-sm ${v === team ? "btn-primary" : "btn-light"}`}
+                              style={{ width: "30px" }}
+                              onClick={() => {
+                                const n = [...finalMascota];
+                                n[i] = n[i] === team ? null : team;
+                                setData({ ...data, mascota: n });
+                              }}
+                            >
+                              X
+                            </button>
+                          </td>
+                        ))}
+                        <td className="fw-bold">
+                          {team === "A" ? calc.prizeMasA : calc.prizeMasB}
                         </td>
-                      ))}
-                      <td className="fw-bold">
-                        {team === "A" ? calc.prizeMasA : calc.prizeMasB}
-                      </td>
-                    </tr>
-                  ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

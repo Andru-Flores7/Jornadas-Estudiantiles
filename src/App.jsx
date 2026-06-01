@@ -1,258 +1,32 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { supabase } from "./supabase";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 import confetti from "canvas-confetti";
 import GlobalHeader from "./components/GlobalHeader";
 import GlobalFooter from "./components/GlobalFooter";
+import RoleSelection from "./components/RoleSelection";
+import ErrorBoundary from "./components/ErrorBoundary";
+import {
+  createInitialJurorState,
+  normalizePayload,
+  initialConfig,
+} from "./utils/scoring";
 
-// --- INITIAL STATE ---
-const createInitialJurorState = () => ({
-  submitted: false,
-  header: { jury: "", matchNo: "", teamA: "Equipo A", teamB: "Equipo B" },
-  juegos: Array(3).fill(null),
-  popurri: Array(11).fill(null),
-  mascota: Array(5).fill(null),
-  ritmo1: {
-    A: {
-      vestimenta: "",
-      originalidad: "",
-      desplazamiento: "",
-      coordinacion: "",
-      "conexion en pareja": "",
-    },
-    B: {
-      vestimenta: "",
-      originalidad: "",
-      desplazamiento: "",
-      coordinacion: "",
-      "conexion en pareja": "",
-    },
-  },
-  ritmo2: {
-    A: {
-      vestimenta: "",
-      originalidad: "",
-      desplazamiento: "",
-      coordinacion: "",
-      "conexion en pareja": "",
-    },
-    B: {
-      vestimenta: "",
-      originalidad: "",
-      desplazamiento: "",
-      coordinacion: "",
-      "conexion en pareja": "",
-    },
-  },
-  videoclip: {
-    A: {
-      "cordinacion coreografica": "",
-      "composicion coreografica": "",
-      "adaptacion al tiempo musical": "",
-      "uso del espacio": "",
-      "trabajo en equipo": "",
-      carisma: "",
-    },
-    B: {
-      "cordinacion coreografica": "",
-      "composicion coreografica": "",
-      "adaptacion al tiempo musical": "",
-      "uso del espacio": "",
-      "trabajo en equipo": "",
-      carisma: "",
-    },
-  },
-});
+// Lazy-load heavy views — split into separate chunks for faster initial load
+const JurorView = lazy(() => import("./components/JurorView"));
+const AdminView = lazy(() => import("./components/AdminView"));
 
-const normalizePayload = (payload) => {
-  if (!payload) return payload;
-  
-  const newPayload = {
-    ...payload,
-    juegos: Array.isArray(payload.juegos) ? [...payload.juegos] : Array(3).fill(null),
-    popurri: Array.isArray(payload.popurri) ? [...payload.popurri] : Array(11).fill(null),
-  };
-
-  if (payload.mascota && Array.isArray(payload.mascota)) {
-    const newMascota = [...payload.mascota];
-    while (newMascota.length < 5) {
-      newMascota.push(null);
-    }
-    newPayload.mascota = newMascota.slice(0, 5);
-  } else {
-    newPayload.mascota = Array(5).fill(null);
-  }
-  
-  return newPayload;
-};
-
-const initialConfig = {
-  teamA: "Equipo A",
-  teamB: "Equipo B",
-  matchNo: "1",
-  jurors: {
-    juror1: "Jurado 1",
-    juror2: "Jurado 2",
-    juror3: "Jurado 3",
-  },
-};
-
-const calculateFinal = (data) => {
-  if (!data) return { a: 0, b: 0 };
-  const ptsJuegosA = data.juegos.filter((v) => v === "A").length * 6;
-  const ptsJuegosB = data.juegos.filter((v) => v === "B").length * 6;
-
-  const countPopA = data.popurri.filter((v) => v === "A").length,
-    countPopB = data.popurri.filter((v) => v === "B").length;
-  const prizePopA = countPopA > countPopB && countPopA > 0 ? 4 : 0;
-  const prizePopB = countPopB > countPopA && countPopB > 0 ? 4 : 0;
-
-  const countMasA = data.mascota.filter((v) => v === "A").length,
-    countMasB = data.mascota.filter((v) => v === "B").length;
-  const prizeMasA = countMasA > countMasB && countMasA > 0 ? 3 : 0;
-  const prizeMasB = countMasB > countMasA && countMasB > 0 ? 3 : 0;
-
-  const sumR1A = Object.values(data.ritmo1.A).reduce(
-    (acc, v) => acc + (Number(v) || 0),
-    0,
-  );
-  const sumR1B = Object.values(data.ritmo1.B).reduce(
-    (acc, v) => acc + (Number(v) || 0),
-    0,
-  );
-  const prizeR1A = sumR1A > sumR1B && sumR1A > 0 ? 4 : 0;
-  const prizeR1B = sumR1B > sumR1A && sumR1B > 0 ? 4 : 0;
-
-  const sumR2A = Object.values(data.ritmo2.A).reduce(
-    (acc, v) => acc + (Number(v) || 0),
-    0,
-  );
-  const sumR2B = Object.values(data.ritmo2.B).reduce(
-    (acc, v) => acc + (Number(v) || 0),
-    0,
-  );
-  const prizeR2A = sumR2A > sumR2B && sumR2A > 0 ? 4 : 0;
-  const prizeR2B = sumR2B > sumR2A && sumR2B > 0 ? 4 : 0;
-
-  const sumVidA = Object.values(data.videoclip.A).reduce(
-    (acc, v) => acc + (Number(v) || 0),
-    0,
-  );
-  const sumVidB = Object.values(data.videoclip.B).reduce(
-    (acc, v) => acc + (Number(v) || 0),
-    0,
-  );
-  const prizeVidA = sumVidA > sumVidB && sumVidA > 0 ? 15 : 0;
-  const prizeVidB = sumVidB > sumVidA && sumVidB > 0 ? 15 : 0;
-
-  return {
-    ptsJuegosA,
-    ptsJuegosB,
-    prizePopA,
-    prizePopB,
-    prizeMasA,
-    prizeMasB,
-    prizeR1A,
-    prizeR1B,
-    prizeR2A,
-    prizeR2B,
-    sumVidA,
-    sumVidB,
-    prizeVidA,
-    prizeVidB,
-    totalA:
-      ptsJuegosA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeVidA,
-    totalB:
-      ptsJuegosB + prizePopB + prizeMasB + prizeR1B + prizeR2B + prizeVidB,
-  };
-};
-
-const calculateConsensus = (db, jurors) => {
-  const submittedIds = jurors
-    .filter((j) => db[j.id]?.submitted)
-    .map((j) => j.id);
-  if (submittedIds.length === 0)
-    return {
-      totalA: 0,
-      totalB: 0,
-      breakdown: {
-        juegosA: 0,
-        juegosB: 0,
-        individualGames: [null, null, null],
-        popA: 0,
-        popB: 0,
-        masA: 0,
-        masB: 0,
-        r1A: 0,
-        r1B: 0,
-        r2A: 0,
-        r2B: 0,
-        vidA: 0,
-        vidB: 0,
-      },
-    };
-
-  const individualResults = submittedIds.map((id) => calculateFinal(db[id]));
-
-  // 1. Juegos (6 pts por juego, por mayoría)
-  let juegosA = 0,
-    juegosB = 0;
-  const individualGames = [];
-  for (let i = 0; i < 3; i++) {
-    let votesA = 0,
-      votesB = 0;
-    submittedIds.forEach((id) => {
-      if (db[id].juegos[i] === "A") votesA++;
-      if (db[id].juegos[i] === "B") votesB++;
-    });
-    const gameWinner = votesA > votesB ? "A" : votesB > votesA ? "B" : null;
-    if (gameWinner === "A") juegosA += 6;
-    else if (gameWinner === "B") juegosB += 6;
-    individualGames.push(gameWinner);
-  }
-
-  // 2. Función genérica para premios por mayoría
-  const getConsensusPrize = (keyA, keyB, points) => {
-    let winA = 0,
-      winB = 0;
-    individualResults.forEach((r) => {
-      if (r[keyA] > r[keyB]) winA++;
-      else if (r[keyB] > r[keyA]) winB++;
-    });
-    if (winA > winB) return { a: points, b: 0 };
-    if (winB > winA) return { a: 0, b: points };
-    return { a: 0, b: 0 };
-  };
-
-  const pop = getConsensusPrize("prizePopA", "prizePopB", 4);
-  const mas = getConsensusPrize("prizeMasA", "prizeMasB", 3);
-  const r1 = getConsensusPrize("prizeR1A", "prizeR1B", 4);
-  const r2 = getConsensusPrize("prizeR2A", "prizeR2B", 4);
-  const vidPrize = getConsensusPrize("prizeVidA", "prizeVidB", 15);
-
-  const breakdown = {
-    juegosA,
-    juegosB,
-    individualGames, // [A, B, null]
-    popA: pop.a,
-    popB: pop.b,
-    masA: mas.a,
-    masB: mas.b,
-    r1A: r1.a,
-    r1B: r1.b,
-    r2A: r2.a,
-    r2B: r2.b,
-    vidA: vidPrize.a,
-    vidB: vidPrize.b,
-  };
-
-  return {
-    totalA: juegosA + pop.a + mas.a + r1.a + r2.a + breakdown.vidA,
-    totalB: juegosB + pop.b + mas.b + r1.b + r2.b + breakdown.vidB,
-    breakdown,
-  };
-};
+const LoadingSpinner = () => (
+  <div className="d-flex align-items-center justify-content-center min-vh-100">
+    <div className="text-center">
+      <div
+        className="spinner-border mb-3"
+        role="status"
+        style={{ color: "#ba8b02", width: "3rem", height: "3rem" }}
+      />
+      <div className="text-white opacity-75 fw-bold">Cargando...</div>
+    </div>
+  </div>
+);
 
 const App = () => {
   const [role, setRole] = useState(null);
@@ -260,6 +34,12 @@ const App = () => {
   const [db, setDb] = useState({ juror1: null, juror2: null, juror3: null });
   const [config, setConfig] = useState(initialConfig);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Ref to hold the debounce timer for Supabase sync
+  const syncTimerRef = useRef(null);
+  // Ref to keep the latest role value accessible inside debounced callback
+  const roleRef = useRef(role);
+  useEffect(() => { roleRef.current = role; }, [role]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -290,7 +70,7 @@ const App = () => {
               setConfig(initialConfig);
             } else {
               setDb((prev) => ({ ...prev, [oldJurorId]: null }));
-              if (role === oldJurorId) {
+              if (roleRef.current === oldJurorId) {
                 setJurorData(createInitialJurorState());
               }
             }
@@ -308,19 +88,36 @@ const App = () => {
         },
       )
       .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, [role]);
 
-  const syncToSupabase = async (newData) => {
-    if (!role || role === "admin") return;
+    return () => {
+      supabase.removeChannel(channel);
+      // Clear any pending sync on unmount
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
+  }, []); // No dependency on `role` — use ref instead to avoid channel restarts
+
+  // Debounced sync: waits 700ms after last change before hitting Supabase
+  const syncToSupabase = useCallback((newData) => {
+    const currentRole = roleRef.current;
+    if (!currentRole || currentRole === "admin") return;
+
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     setIsSyncing(true);
-    await supabase
-      .from("jornadas_scores")
-      .upsert({ juror_id: role, payload: newData, updated_at: new Date() });
-    setIsSyncing(false);
-  };
 
-  const handleSelectRole = async (selectedRole) => {
+    syncTimerRef.current = setTimeout(async () => {
+      try {
+        await supabase
+          .from("jornadas_scores")
+          .upsert({ juror_id: currentRole, payload: newData, updated_at: new Date() });
+      } catch (err) {
+        console.error("Sync error:", err);
+      } finally {
+        setIsSyncing(false);
+      }
+    }, 700);
+  }, []);
+
+  const handleSelectRole = useCallback(async (selectedRole) => {
     setRole(selectedRole);
     if (selectedRole !== "admin") {
       const { data } = await supabase
@@ -331,28 +128,37 @@ const App = () => {
       if (data) setJurorData(normalizePayload(data.payload));
       else setJurorData(createInitialJurorState());
     }
-  };
+  }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    // Cancel any pending debounced sync and immediately flush
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    const currentRole = roleRef.current;
+    if (!currentRole || currentRole === "admin") return;
+
     const finalData = { ...jurorData, submitted: true };
     setJurorData(finalData);
-    await syncToSupabase(finalData);
-    
-    // Efecto premium de confeti para celebrar el envío exitoso
+    setIsSyncing(true);
     try {
-      confetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 }
-      });
+      await supabase
+        .from("jornadas_scores")
+        .upsert({ juror_id: currentRole, payload: finalData, updated_at: new Date() });
+    } catch (err) {
+      console.error("Save error:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+
+    try {
+      confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
     } catch (err) {
       console.warn("Confetti error:", err);
     }
 
     alert("¡Resultados enviados con éxito!");
-  };
+  }, [jurorData]);
 
-  const handleReset = async () => {
+  const handleReset = useCallback(async () => {
     if (
       window.confirm(
         "¿ESTÁS SEGURO? Esto borrará TODOS los puntos y RESETEARÁ los nombres a sus valores por defecto.",
@@ -368,7 +174,13 @@ const App = () => {
         alert("Sistema reseteado completamente.");
       }
     }
-  };
+  }, []);
+
+  // Stable setData callback — avoids creating a new fn on every render
+  const handleSetData = useCallback((d) => {
+    setJurorData(d);
+    syncToSupabase(d);
+  }, [syncToSupabase]);
 
   let content;
   if (!role) {
@@ -388,10 +200,7 @@ const App = () => {
         role={role}
         data={jurorData}
         config={config}
-        setData={(d) => {
-          setJurorData(d);
-          syncToSupabase(d);
-        }}
+        setData={handleSetData}
         onSave={handleSave}
         onBack={() => setRole(null)}
         isSyncing={isSyncing}
@@ -400,973 +209,17 @@ const App = () => {
   }
 
   return (
-    <div className="min-vh-100 d-flex flex-column">
-      <GlobalHeader />
-      <div className="flex-grow-1">{content}</div>
-      <GlobalFooter />
-    </div>
-  );
-};
-
-// --- COMPONENTES ---
-const RoleSelection = ({ onSelect, config }) => (
-  <div className="container d-flex align-items-center justify-content-center min-vh-100">
-    <div
-      className="card shadow-lg p-5 text-center border-0"
-      style={{ maxWidth: "600px", width: "100%", borderRadius: "24px" }}
-    >
-      <h1 className="fw-bold text-primary mb-4">Jornadas Estudiantiles 2026</h1>
-      <div className="row g-3">
-        {["juror1", "juror2", "juror3"].map((id) => (
-          <div className="col-12" key={id}>
-            <button
-              className="btn btn-outline-primary btn-lg w-100 py-3 fw-bold"
-              onClick={() => onSelect(id)}
-            >
-              Acceso {config.jurors[id]}
-            </button>
-          </div>
-        ))}
-        <div className="col-12 mt-3">
-          <button
-            className="btn btn-dark btn-lg w-100 py-3 fw-bold shadow"
-            onClick={() => onSelect("admin")}
-          >
-            🛡️ Administrador
-          </button>
+    <ErrorBoundary>
+      <div className="min-vh-100 d-flex flex-column">
+        <GlobalHeader />
+        <div className="flex-grow-1">
+          <Suspense fallback={<LoadingSpinner />}>
+            {content}
+          </Suspense>
         </div>
+        <GlobalFooter />
       </div>
-    </div>
-  </div>
-);
-
-const JurorView = ({
-  role,
-  data,
-  config,
-  setData,
-  onSave,
-  onBack,
-  isSyncing,
-}) => {
-  const calc = useMemo(() => calculateFinal(data), [data]);
-
-  const handleScoreChange = (section, team, criterion, value, max) => {
-    // Permitir vacío para borrar
-    if (value === "") {
-      setData({
-        ...data,
-        [section]: {
-          ...data[section],
-          [team]: { ...data[section][team], [criterion]: "" },
-        },
-      });
-      return;
-    }
-
-    const val = parseInt(value, 10);
-    if (!isNaN(val) && val >= 1 && val <= max) {
-      setData({
-        ...data,
-        [section]: {
-          ...data[section],
-          [team]: { ...data[section][team], [criterion]: val.toString() },
-        },
-      });
-    }
-  };
-
-  return (
-    <div className="container-fluid py-4 min-vh-100 pb-5">
-      <div className="card d-flex flex-row justify-content-between align-items-center mb-4 p-3 border-0">
-        <button
-          className="btn btn-sm btn-outline-light opacity-75"
-          onClick={onBack}
-        >
-          <span className="me-1">←</span> 
-        </button>
-        <h5 className="m-0 fw-bold text-uppercase tracking-wider" style={{ fontSize: '18px' }}>
-          <span className="text-primary">Planilla</span> {config.jurors[role]} 
-        </h5>
-        <div className="badge bg-success">
-          {isSyncing ? "Sincronizando..." : "Conectado"}
-        </div>
-      </div>
-
-      <header
-        className="card border-0 mb-4 p-4 text-white"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(186, 139, 2, 0.15))",
-          backdropFilter: "blur(10px)",
-        }}
-      >
-        <div className="row g-4 align-items-end text-center">
-          <div className="col-md-2">
-            <label className="form-label small text-uppercase fw-bold opacity-75 mb-1">
-              Encuentro
-            </label>
-            <div className="h3 m-0 fw-bold">#{config.matchNo}</div>
-          </div>
-          <div className="col-md-5">
-            <label className="form-label small text-uppercase fw-bold opacity-75 mb-1">
-              Equipo A
-            </label>
-            <div className="h3 m-0 fw-bold">{config.teamA}</div>
-          </div>
-          <div className="col-md-5">
-            <label className="form-label small text-uppercase fw-bold opacity-75 mb-1">
-              Equipo B
-            </label>
-            <div className="h3 m-0 fw-bold">{config.teamB}</div>
-          </div>
-        </div>
-      </header>
-
-      <main className="row g-4">
-        {/* JUEGOS */}
-        <section className="col-12">
-          <div className="card shadow-sm border-0">
-            <div className="card-header text-white fw-bold">
-              JUEGOS (6 pts c/u)
-            </div>
-            <div className="card-body p-0">
-              <table className="table table-bordered text-center m-0">
-                <thead>
-                  <tr>
-                    <th>Juego</th>
-                    <th>{config.teamA}</th>
-                    <th>{config.teamB}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[0, 1, 2].map((i) => (
-                    <tr key={i}>
-                      <td>#{i + 1}</td>
-                      <td>
-                        <button
-                          className={`btn btn-lg ${data.juegos[i] === "A" ? "btn-success" : "btn-light"}`}
-                          onClick={() => {
-                            const n = [...data.juegos];
-                            n[i] = n[i] === "A" ? null : "A";
-                            setData({ ...data, juegos: n });
-                          }}
-                        >
-                          X
-                        </button>
-                      </td>
-                      <td>
-                        <button
-                          className={`btn btn-lg ${data.juegos[i] === "B" ? "btn-success" : "btn-light"}`}
-                          onClick={() => {
-                            const n = [...data.juegos];
-                            n[i] = n[i] === "B" ? null : "B";
-                            setData({ ...data, juegos: n });
-                          }}
-                        >
-                          X
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-        {/* POPURRI */}
-        <section className="col-12">
-          <div className="card shadow-sm border-0">
-            <div className="card-header text-white fw-bold">
-              POPURRÍ ALTERNATIVO (4 pts)
-            </div>
-            <div className="card-body p-0 overflow-auto">
-              <table className="table table-bordered text-center m-0">
-                <thead>
-                  <tr>
-                    <th>Equipo</th>
-                    {[...Array(11)].map((_, i) => (
-                      <th key={i}>{i + 1}</th>
-                    ))}
-                    <th>Ganador Popurrí Alternativo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {["A", "B"].map((team) => (
-                    <tr key={team}>
-                      <td>{team === "A" ? config.teamA : config.teamB}</td>
-                      {data.popurri.map((v, i) => (
-                        <td key={i}>
-                          <button
-                            className={`btn btn-sm ${v === team ? "btn-primary" : "btn-light"}`}
-                            style={{ width: "30px" }}
-                            onClick={() => {
-                              const n = [...data.popurri];
-                              n[i] = n[i] === team ? null : team;
-                              setData({ ...data, popurri: n });
-                            }}
-                          >
-                            X
-                          </button>
-                        </td>
-                      ))}
-                      <td className="fw-bold">
-                        {team === "A" ? calc.prizePopA : calc.prizePopB}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        {/* POPURRI ALTERNATIVO DE LA MASCOTA */}
-        <section className="col-12">
-          <div className="card shadow-sm border-0">
-            <div className="card-header text-white fw-bold">
-              POPURRÍ ALTERNATIVO DE LA MASCOTA (3 pts)
-            </div>
-            <div className="card-body p-0 overflow-auto">
-              <table className="table table-bordered text-center m-0">
-                <thead>
-                  <tr>
-                    <th>Equipo</th>
-                    {[...Array(5)].map((_, i) => (
-                      <th key={i}>{i + 1}</th>
-                    ))}
-                    <th>Ganador Popurrí Mascota</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {["A", "B"].map((team) => {
-                    const mascotaList = Array.isArray(data.mascota) ? [...data.mascota] : [];
-                    while (mascotaList.length < 5) {
-                      mascotaList.push(null);
-                    }
-                    const finalMascota = mascotaList.slice(0, 5);
-                    return (
-                      <tr key={team}>
-                        <td>{team === "A" ? config.teamA : config.teamB}</td>
-                        {finalMascota.map((v, i) => (
-                          <td key={i}>
-                            <button
-                              className={`btn btn-sm ${v === team ? "btn-primary" : "btn-light"}`}
-                              style={{ width: "30px" }}
-                              onClick={() => {
-                                const n = [...finalMascota];
-                                n[i] = n[i] === team ? null : team;
-                                setData({ ...data, mascota: n });
-                              }}
-                            >
-                              X
-                            </button>
-                          </td>
-                        ))}
-                        <td className="fw-bold">
-                          {team === "A" ? calc.prizeMasA : calc.prizeMasB}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-        {/* RITMOS (DOS TABLAS) */}
-        {["ritmo1", "ritmo2"].map((rit, idx) => (
-          <section className="col-lg-6" key={rit}>
-            <div className="card shadow-sm border-0">
-              <div className="card-header text-white fw-bold">
-                POPURRÍ SELECCIONADO <em>RITMO {idx + 1}</em> (SE CALIFICA DEL 1 AL 5 CADA ITEM) | 4 pts
-              </div>
-              <div className="card-body">
-                <div className="row g-3">
-                  {["A", "B"].map((team) => (
-                    <div className="col-6" key={team}>
-                      <h6 className="small text-uppercase fw-bold opacity-75">
-                        {team === "A" ? config.teamA : config.teamB}
-                      </h6>
-                      <table className="table table-sm table-bordered text-center">
-                        <tbody>
-                          {[
-                            "Vestimenta",
-                            "Originalidad",
-                            "Desplazamiento",
-                            "Coordinacion",
-                            "Conexion en pareja",
-                          ].map((c) => (
-                            <tr key={c}>
-                              <td className="text-start small opacity-75">
-                                {c}
-                              </td>
-                              <td>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    max="5"
-                                    className="form-control form-control-sm text-center mx-auto"
-                                    value={data[rit][team][c]}
-                                    onChange={(e) =>
-                                      handleScoreChange(
-                                        rit,
-                                        team,
-                                        c,
-                                        e.target.value,
-                                        5,
-                                      )
-                                    }
-                                  />
-                              </td>
-                            </tr>
-                          ))}
-                          <tr className="table-warning">
-                            <td>Suma</td>
-                            <td>
-                              {Object.values(data[rit][team]).reduce(
-                                (a, v) => a + (Number(v) || 0),
-                                0,
-                              )}
-                            </td>
-                          </tr>
-                          <tr className="table-success">
-                            <td>Ganador Ritmo {idx + 1}</td>
-                            <td>
-                              {team === "A"
-                                ? idx === 0
-                                  ? calc.prizeR1A
-                                  : calc.prizeR2A
-                                : idx === 0
-                                  ? calc.prizeR1B
-                                  : calc.prizeR2B}
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-        ))}
-        {/* VIDEOCLIP */}
-        <section className="col-12">
-          <div className="card shadow-sm border-0">
-            <div className="card-header text-white fw-bold">
-              VIDEOCLIP (SE CALIFICA DEL 1 AL 8 CADA ITEM) | 15 pts
-            </div>
-            <div className="card-body">
-              <div className="row g-4">
-                {["A", "B"].map((team) => (
-                  <div className="col-md-6" key={team}>
-                    <h6>{team === "A" ? config.teamA : config.teamB}</h6>
-                    <table className="table table-sm table-bordered text-center">
-                      <tbody>
-                        {[
-                          {
-                            k: "cordinacion coreografica",
-                            l: "Coordinación coreográfica",
-                          },
-                          {
-                            k: "composicion coreografica",
-                            l: "Composicion coreografica",
-                          },
-                          {
-                            k: "adaptacion al tiempo musical",
-                            l: "Adaptación al tiempo musical",
-                          },
-                          { k: "uso del espacio", l: "Uso del espacio" },
-                          { k: "trabajo en equipo", l: "Trabajo en equipo" },
-                          { k: "carisma", l: "Carisma" },
-                        ].map((c) => (
-                          <tr key={c.k}>
-                            <td className="text-start small">{c.l}</td>
-                            <td>
-                              <input
-                                type="number"
-                                min="1"
-                                max="8"
-                                className="form-control form-control-sm text-center mx-auto"
-                                value={data.videoclip[team][c.k]}
-                                onChange={(e) =>
-                                  handleScoreChange(
-                                    "videoclip",
-                                    team,
-                                    c.k,
-                                    e.target.value,
-                                    8,
-                                  )
-                                }
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                        <tr className="table-warning">
-                          <td>Suma</td>
-                          <td>{team === "A" ? calc.sumVidA : calc.sumVidB}</td>
-                        </tr>
-                        <tr className="table-success">
-                          <td>Ganador Video Clip</td>
-                          <td>
-                            {team === "A" ? calc.prizeVidA : calc.prizeVidB}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <footer className="fixed-bottom py-3 px-4">
-        <div className="container-fluid d-flex justify-content-between align-items-center">
-          <div className="d-flex gap-4 align-items-center">
-            <div className="text-center">
-              <div
-                className="small text-uppercase opacity-50 fw-bold"
-                style={{ fontSize: "0.65rem" }}
-              >
-                {config.teamA}
-              </div>
-              <div className="h5 m-0 fw-bold text-primary">{calc.totalA}</div>
-            </div>
-            <div className="vr h-100 opacity-25"></div>
-            <div className="text-center">
-              <div
-                className="small text-uppercase opacity-50 fw-bold"
-                style={{ fontSize: "0.65rem" }}
-              >
-                {config.teamB}
-              </div>
-              <div className="h5 m-0 fw-bold text-primary">{calc.totalB}</div>
-            </div>
-          </div>
-          <button
-            className="btn btn-success  fw-bold shadow-sm "
-            style={{ borderRadius: "20px", overflow: "hidden",fontSize:"10px" }}
-            onClick={onSave}
-          >
-            🚀 ENVIAR RESULTADOS
-          </button>
-        </div>
-      </footer>
-    </div>
-  );
-};
-
-const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
-  const winner = a === b ? (hasData ? "EMPATE" : null) : a > b ? teamA : teamB;
-  return (
-    <div
-      className="card border-0 shadow-lg text-white mb-5"
-      style={{
-        background: "linear-gradient(135deg, #2c3e50, #000000)",
-        borderRadius: "20px",
-        overflow: "hidden",
-        minHeight: "180px",
-      }}
-    >
-      <div className="card-body p-3 d-flex flex-column justify-content-between text-center">
-        <div
-          className="text-uppercase opacity-75 fw-bold mb-3 mt-2"
-          style={{ fontSize: "clamp(1rem, 1.5vw, 1.4rem)", letterSpacing: "2px" }}
-        >
-          {label}
-        </div>
-
-        <div className="d-flex align-items-center justify-content-around my-3">
-          <div className="text-center" style={{ flex: 1 }}>
-            <div className="m-0 fw-bold" style={{ color: "#ff9800", fontSize: "clamp(3rem, 5vw, 4.5rem)", lineHeight: "1" }}>
-              {a}
-            </div>
-            <div
-              className="opacity-75 fw-bold mt-2 px-2"
-              style={{ fontSize: "clamp(0.85rem, 1vw, 1.1rem)" }}
-            >
-              {teamA}
-            </div>
-          </div>
-          <div className="opacity-25 fw-bold mx-2" style={{ fontSize: "clamp(1.5rem, 2vw, 2rem)" }}>VS</div>
-          <div className="text-center" style={{ flex: 1 }}>
-            <div className="m-0 fw-bold" style={{ color: "#ff9800", fontSize: "clamp(3rem, 5vw, 4.5rem)", lineHeight: "1" }}>
-              {b}
-            </div>
-            <div
-              className="opacity-75 fw-bold mt-2 px-2"
-              style={{ fontSize: "clamp(0.85rem, 1vw, 1.1rem)" }}
-            >
-              {teamB}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-3 mb-2 px-2">
-          {winner ? (
-            <div
-              className="py-2 px-3 rounded-pill shadow-sm d-inline-block w-100"
-              style={{
-                background: "linear-gradient(to right, #ba8b02, #ffd700)",
-                color: "#000",
-                fontSize: "clamp(0.9rem, 1.2vw, 1.2rem)",
-                fontWeight: "900",
-              }}
-            >
-              🏆 {winner === "EMPATE" ? "EMPATE" : `GANADOR: ${winner}`}
-            </div>
-          ) : (
-            <div
-              className="py-2 px-3 rounded-pill border border-secondary opacity-25 d-inline-block w-100"
-              style={{ fontSize: "clamp(0.9rem, 1.2vw, 1.2rem)" }}
-            >
-              PENDIENTE
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const AdminView = ({ db, onBack, onReset, config }) => {
-  const teamA = config.teamA;
-  const teamB = config.teamB;
-  const jurors = [
-    { id: "juror1", label: config.jurors.juror1 },
-    { id: "juror2", label: config.jurors.juror2 },
-    { id: "juror3", label: config.jurors.juror3 },
-  ];
-
-  const [editConfig, setEditConfig] = useState(config);
-  const [isSaving, setIsSaving] = useState(false);
-  const { totalA, totalB, breakdown } = calculateConsensus(db, jurors);
-  const allVoted = jurors.every((j) => db[j.id]?.submitted);
-
-  const handleSaveConfig = async () => {
-    setIsSaving(true);
-    await supabase
-      .from("jornadas_scores")
-      .upsert({
-        juror_id: "config",
-        payload: editConfig,
-        updated_at: new Date(),
-      });
-    setIsSaving(false);
-    alert("Configuración actualizada y sincronizada.");
-  };
-
-  const generatePDF = () => {
-    console.log("Iniciando generación de PDF...");
-    try {
-      // Lanzar confeti para celebrar la generación del acta oficial
-      try {
-        confetti({
-          particleCount: 200,
-          spread: 100,
-          origin: { y: 0.6 }
-        });
-      } catch (err) {
-        console.warn("Confetti error:", err);
-      }
-
-      const doc = new jsPDF();
-
-      // Header
-      doc.setFontSize(22);
-      doc.setTextColor(40, 40, 40);
-      doc.text("Jornadas Estudiantiles 2026", 105, 20, { align: "center" });
-
-      doc.setFontSize(14);
-      doc.text(
-        `Comprobante de Resultados - Encuentro #${config.matchNo}`,
-        105,
-        30,
-        { align: "center" },
-      );
-      doc.line(20, 35, 190, 35);
-
-      // Match Info
-      doc.setFontSize(12);
-      doc.text(`Encuentro: #${config.matchNo}`, 20, 45);
-      doc.text(
-        `Fecha: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
-        130,
-        45,
-      );
-
-      doc.setFontSize(16);
-      doc.text(`${teamA} vs ${teamB}`, 105, 55, { align: "center" });
-
-      // Individual Juror Table
-      const jurorRows = jurors.map((j) => {
-        const results = db[j.id] ? calculateFinal(db[j.id]) : null;
-        return [
-          j.label,
-          results ? results.totalA : "-",
-          results ? results.totalB : "-",
-          db[j.id]?.submitted ? "ENVIADO" : "PENDIENTE",
-        ];
-      });
-
-      autoTable(doc, {
-        startY: 65,
-        head: [["Jurado", `Puntos ${teamA}`, `Puntos ${teamB}`, "Estado"]],
-        body: jurorRows,
-        theme: "striped",
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-      });
-
-      const consensus = calculateConsensus(db, jurors);
-      const winner =
-        consensus.totalA === consensus.totalB
-          ? "EMPATE"
-          : consensus.totalA > consensus.totalB
-            ? teamA
-            : teamB;
-      const nextY =
-        doc.lastAutoTable && doc.lastAutoTable.finalY
-          ? doc.lastAutoTable.finalY + 15
-          : 120;
-
-      autoTable(doc, {
-        startY: nextY,
-        head: [["RESULTADO FINAL (CONSENSO)", teamA, teamB, "GANADOR"]],
-        body: [
-          [
-            "PUNTAJE FINAL VALIDADO",
-            consensus.totalA.toString(),
-            consensus.totalB.toString(),
-            {
-              content: winner,
-              styles: { fontStyle: "bold", textColor: [39, 174, 96] },
-            },
-          ],
-        ],
-        theme: "grid",
-        headStyles: { fillColor: [44, 62, 80], textColor: 255 },
-        styles: { fontSize: 14 },
-      });
-
-      doc.setFontSize(10);
-      doc.setTextColor(150);
-      doc.text(
-        "Este documento es un comprobante digital generado por el sistema de puntuación.",
-        105,
-        280,
-        { align: "center" },
-      );
-      doc.save(
-        `Resultado_Encuentro_${config.matchNo}_${teamA}_vs_${teamB}.pdf`,
-      );
-    } catch (error) {
-      console.error("Error al generar el PDF:", error);
-      alert("Hubo un error al generar el PDF.");
-    }
-  };
-
-  // Removed duplicate declarations here
-
-  return (
-    <div className="container py-5">
-      <div className="d-flex justify-content-between mb-4">
-        <button className="btn btn-outline-secondary btn-sm" onClick={onBack}>
-          Volver
-        </button>
-        <div className="d-flex gap-2">
-          <button
-            className="btn btn-info btn-sm text-white fw-bold px-3"
-            onClick={generatePDF}
-          >
-            📥 Descargar Comprobante PDF
-          </button>
-          <button className="btn btn-danger btn-sm" onClick={onReset}>
-            🧹 Limpiar Evento
-          </button>
-        </div>
-      </div>
-
-      <div
-        className="card shadow-sm border-0 p-4 mb-5"
-        style={{ borderRadius: "20px", background: "rgba(255,255,255,0.05)" }}
-      >
-        <h4 className="fw-bold mb-4 text-primary">⚙️ Ajustes del Encuentro</h4>
-        <div className="row g-3">
-          <div className="col-md-2">
-            <label className="form-label small fw-bold">N° Encuentro</label>
-            <input
-              type="text"
-              className="form-control"
-              value={editConfig.matchNo}
-              onChange={(e) =>
-                setEditConfig({ ...editConfig, matchNo: e.target.value })
-              }
-            />
-          </div>
-          <div className="col-md-5">
-            <label className="form-label small fw-bold">Nombre Equipo A</label>
-            <input
-              type="text"
-              className="form-control"
-              value={editConfig.teamA}
-              onChange={(e) =>
-                setEditConfig({ ...editConfig, teamA: e.target.value })
-              }
-            />
-          </div>
-          <div className="col-md-5">
-            <label className="form-label small fw-bold">Nombre Equipo B</label>
-            <input
-              type="text"
-              className="form-control"
-              value={editConfig.teamB}
-              onChange={(e) =>
-                setEditConfig({ ...editConfig, teamB: e.target.value })
-              }
-            />
-          </div>
-          {["juror1", "juror2", "juror3"].map((id, i) => (
-            <div className="col-md-4" key={id}>
-              <label className="form-label small fw-bold">
-                Nombre Jurado {i + 1}
-              </label>
-              <input
-                type="text"
-                className="form-control"
-                value={editConfig.jurors[id]}
-                onChange={(e) =>
-                  setEditConfig({
-                    ...editConfig,
-                    jurors: { ...editConfig.jurors, [id]: e.target.value },
-                  })
-                }
-              />
-            </div>
-          ))}
-          <div className="col-12 mt-3">
-            <button
-              className="btn btn-primary w-100 fw-bold"
-              onClick={handleSaveConfig}
-              disabled={isSaving}
-            >
-              {isSaving ? "Guardando..." : "💾 Guardar y Sincronizar Nombres"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <h2 className="text-center fw-bold mb-5 text-uppercase tracking-tighter">
-        Tablero de Resultados: {teamA} vs {teamB}
-      </h2>
-
-      {/* Visual Cards Grid - Vertical List */}
-      <div className="row justify-content-center mb-5">
-        <div className="col-lg-6 col-md-8">
-          {(breakdown.individualGames || []).map((win, i) => (
-            <div className="mb-4" key={`card-juego-${i}`}>
-              <CategoryWinnerCard
-                label={`Juego #${i + 1}`}
-                a={allVoted ? (win === "A" ? 6 : 0) : "-"}
-                b={allVoted ? (win === "B" ? 6 : 0) : "-"}
-                teamA={teamA}
-                teamB={teamB}
-                hasData={allVoted}
-              />
-            </div>
-          ))}
-          {[
-            {
-              label: "Popurrí Alternativo",
-              a: breakdown.popA,
-              b: breakdown.popB,
-            },
-            { label: "Popurrí Mascota", a: breakdown.masA, b: breakdown.masB },
-            { label: "Popurrí Seleccionado Ritmo 1", a: breakdown.r1A, b: breakdown.r1B },
-            { label: "Popurrí Seleccionado Ritmo 2", a: breakdown.r2A, b: breakdown.r2B },
-            { label: "Video Clip", a: breakdown.vidA, b: breakdown.vidB },
-          ].map((cat, i) => (
-            <div className="mb-4" key={`card-cat-${i}`}>
-              <CategoryWinnerCard
-                label={cat.label}
-                a={allVoted ? cat.a : "-"}
-                b={allVoted ? cat.b : "-"}
-                teamA={teamA}
-                teamB={teamB}
-                hasData={allVoted}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="row g-4 mb-5">
-        <div className="col-lg-8">
-          <div
-            className="card shadow border-0 h-100"
-            style={{ borderRadius: "20px", overflow: "hidden" }}
-          >
-            <div className="card-header bg-primary text-white py-3 fw-bold text-center text-uppercase tracking-wider">
-              Puntaje en Vivo por Categoría
-            </div>
-            <div className="card-body p-0 table-responsive">
-              <table className="table table-hover m-0 align-middle text-center responsive-table-admin">
-                <thead className="table-light">
-                  <tr>
-                    <th className="text-start ps-4">Categoría</th>
-                    <th>{teamA}</th>
-                    <th>{teamB}</th>
-                    <th>Ganador</th>
-                  </tr>
-                </thead>
-                <tbody className="fw-bold">
-                  {[
-                    {
-                      label: "Juegos",
-                      a: breakdown.juegosA,
-                      b: breakdown.juegosB,
-                    },
-                    {
-                      label: "Ganador Popurrí Alternativo",
-                      a: breakdown.popA,
-                      b: breakdown.popB,
-                    },
-                    {
-                      label: "Ganador Popurrí Mascota",
-                      a: breakdown.masA,
-                      b: breakdown.masB,
-                    },
-                    {
-                      label: "Ganador Popurrí Selec. Ritmo 1",
-                      a: breakdown.r1A,
-                      b: breakdown.r1B,
-                    },
-                    {
-                      label: "Ganador Popurrí Selec. Ritmo 2",
-                      a: breakdown.r2A,
-                      b: breakdown.r2B,
-                    },
-                    {
-                      label: "Ganador Video Clip",
-                      a: breakdown.vidA,
-                      b: breakdown.vidB,
-                    },
-                  ].map((row, i) => {
-                    const rowWinner = !allVoted
-                      ? "PENDIENTE"
-                      : row.a === row.b
-                        ? "EMPATE"
-                        : row.a > row.b
-                          ? teamA
-                          : teamB;
-                    return (
-                      <tr key={i}>
-                        <td className="text-start ps-4 opacity-75">
-                          {row.label}
-                        </td>
-                        <td style={{ color: "#ffb74d" }}>{allVoted ? row.a : "-"}</td>
-                        <td style={{ color: "#ffb74d" }}>{allVoted ? row.b : "-"}</td>
-                        <td>
-                          <span
-                            className={`badge ${
-                              rowWinner === teamA || rowWinner === teamB 
-                                ? "bg-success" 
-                                : rowWinner === "EMPATE" 
-                                  ? "bg-warning text-dark" 
-                                  : "bg-secondary"
-                            } px-3`}
-                          >
-                            {rowWinner}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot className="table-dark">
-                  <tr>
-                    <td className="text-start ps-4">TOTAL ACUMULADO</td>
-                    <td className="h4 m-0" style={{ color: "#ff9800" }}>
-                      {allVoted ? totalA : "-"}
-                    </td>
-                    <td className="h4 m-0" style={{ color: "#ff9800" }}>
-                      {allVoted ? totalB : "-"}
-                    </td>
-                    <td className={`fw-bold ${allVoted && totalA === totalB ? "text-warning" : "text-info"}`}>
-                      {!allVoted 
-                        ? "PENDIENTE" 
-                        : totalA === totalB
-                          ? "EMPATE"
-                          : totalA > totalB
-                            ? teamA
-                            : teamB}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div className="col-lg-4">
-          <div className="d-flex flex-column gap-3 h-100">
-            {jurors.map((j) => (
-              <div
-                key={j.id}
-                className={`card shadow-sm border-0 p-3 text-center flex-grow-1 d-flex flex-column justify-content-center ${db[j.id]?.submitted ? "border-start border-success border-5" : "opacity-50"}`}
-              >
-                <h6 className="mb-1">{j.label}</h6>
-                <div className="small text-uppercase opacity-50 mb-2">
-                  {db[j.id]?.submitted ? "✅ Recibido" : "⏳ Pendiente"}
-                </div>
-                <b className="h5 mb-0">
-                  {teamA}: {db[j.id] ? calculateFinal(db[j.id]).totalA : "-"} |{" "}
-                  {teamB}: {db[j.id] ? calculateFinal(db[j.id]).totalB : "-"}
-                </b>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div
-        className="card shadow-lg bg-dark bg-opacity-75 text-white p-5 text-center border-0 backdrop-blur"
-        style={{
-          borderRadius: "30px",
-          background: "linear-gradient(135deg, #1a1a1a, #2c3e50)",
-        }}
-      >
-        <div className="row justify-content-center align-items-center">
-          <div className="col-md-5">
-            <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
-              {allVoted ? totalA : "-"}
-            </div>
-            <h4 className="text-uppercase">{teamA}</h4>
-          </div>
-          <div className="col-md-2 display-4 opacity-25">VS</div>
-          <div className="col-md-5">
-            <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
-              {allVoted ? totalB : "-"}
-            </div>
-            <h4 className="text-uppercase">{teamB}</h4>
-          </div>
-        </div>
-        <div className="mt-5">
-          <div className="winner-badge shadow-lg">
-            <h2 className="m-0 fw-bolder text-uppercase tracking-tighter">
-              {!allVoted 
-                ? "⏳ ESPERANDO JURADOS..."
-                : totalA === totalB 
-                  ? "⚖️ EMPATE" 
-                  : `🏆 GANADOR: ${totalA > totalB ? teamA : teamB}`
-              }
-            </h2>
-          </div>
-        </div>
-      </div>
-
-    </div>
+    </ErrorBoundary>
   );
 };
 

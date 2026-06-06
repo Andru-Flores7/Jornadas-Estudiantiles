@@ -21,6 +21,7 @@ const JurorView = ({
           ...data[section],
           [team]: { ...data[section][team], [criterion]: "" },
         },
+        submitted: false,
       });
       return;
     }
@@ -33,6 +34,7 @@ const JurorView = ({
           ...data[section],
           [team]: { ...data[section][team], [criterion]: val.toString() },
         },
+        submitted: false,
       });
     }
   };
@@ -44,10 +46,13 @@ const JurorView = ({
           className="btn btn-sm btn-outline-light opacity-75"
           onClick={onBack}
         >
-          <span className="me-1">←</span> 
+          <span className="me-1">←</span>
         </button>
-        <h5 className="m-0 fw-bold text-uppercase tracking-wider" style={{ fontSize: '18px' }}>
-          <span className="text-primary">Planilla</span> {config.jurors[role]} 
+        <h5
+          className="m-0 fw-bold text-uppercase tracking-wider"
+          style={{ fontSize: "18px" }}
+        >
+          <span className="text-primary">Planilla</span> {config.jurors[role]}
         </h5>
         <div className="badge bg-success">
           {isSyncing ? "Sincronizando..." : "Conectado"}
@@ -110,7 +115,7 @@ const JurorView = ({
                           onClick={() => {
                             const n = [...data.juegos];
                             n[i] = n[i] === "A" ? null : "A";
-                            setData({ ...data, juegos: n });
+                            setData({ ...data, juegos: n, submitted: false });
                           }}
                         >
                           X
@@ -122,7 +127,7 @@ const JurorView = ({
                           onClick={() => {
                             const n = [...data.juegos];
                             n[i] = n[i] === "B" ? null : "B";
-                            setData({ ...data, juegos: n });
+                            setData({ ...data, juegos: n, submitted: false });
                           }}
                         >
                           X
@@ -164,7 +169,11 @@ const JurorView = ({
                             onClick={() => {
                               const n = [...data.popurri];
                               n[i] = n[i] === team ? null : team;
-                              setData({ ...data, popurri: n });
+                              setData({
+                                ...data,
+                                popurri: n,
+                                submitted: false,
+                              });
                             }}
                           >
                             X
@@ -201,7 +210,9 @@ const JurorView = ({
                 </thead>
                 <tbody>
                   {["A", "B"].map((team) => {
-                    const mascotaList = Array.isArray(data.mascota) ? [...data.mascota] : [];
+                    const mascotaList = Array.isArray(data.mascota)
+                      ? [...data.mascota]
+                      : [];
                     while (mascotaList.length < 5) {
                       mascotaList.push(null);
                     }
@@ -217,7 +228,11 @@ const JurorView = ({
                               onClick={() => {
                                 const n = [...finalMascota];
                                 n[i] = n[i] === team ? null : team;
-                                setData({ ...data, mascota: n });
+                                setData({
+                                  ...data,
+                                  mascota: n,
+                                  submitted: false,
+                                });
                               }}
                             >
                               X
@@ -240,7 +255,8 @@ const JurorView = ({
           <section className="col-lg-6" key={rit}>
             <div className="card shadow-sm border-0">
               <div className="card-header text-white fw-bold">
-                POPURRÍ SELECCIONADO <em>RITMO {idx + 1}</em> (SE CALIFICA DEL 1 AL 5 CADA ITEM) | 4 pts
+                POPURRÍ SELECCIONADO <em>RITMO {idx + 1}</em> (SE CALIFICA DEL 1
+                AL 5 CADA ITEM) | 4 pts
               </div>
               <div className="card-body">
                 <div className="row g-3">
@@ -256,29 +272,32 @@ const JurorView = ({
                             { key: "originalidad", label: "Originalidad" },
                             { key: "desplazamiento", label: "Desplazamiento" },
                             { key: "coordinacion", label: "Coordinacion" },
-                            { key: "conexion en pareja", label: "Conexion en pareja" },
+                            {
+                              key: "conexion en pareja",
+                              label: "Conexion en pareja",
+                            },
                           ].map((c) => (
                             <tr key={c.key}>
                               <td className="text-start small opacity-75">
                                 {c.label}
                               </td>
                               <td>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    max="5"
-                                    className="form-control form-control-sm text-center mx-auto"
-                                    value={data[rit][team][c.key]}
-                                    onChange={(e) =>
-                                      handleScoreChange(
-                                        rit,
-                                        team,
-                                        c.key,
-                                        e.target.value,
-                                        5,
-                                      )
-                                    }
-                                  />
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="5"
+                                  className="form-control form-control-sm text-center mx-auto"
+                                  value={data[rit][team][c.key]}
+                                  onChange={(e) =>
+                                    handleScoreChange(
+                                      rit,
+                                      team,
+                                      c.key,
+                                      e.target.value,
+                                      5,
+                                    )
+                                  }
+                                />
                               </td>
                             </tr>
                           ))}
@@ -295,12 +314,12 @@ const JurorView = ({
                             <td>Ganador Ritmo {idx + 1}</td>
                             <td>
                               {team === "A"
-                                  ? idx === 0
-                                    ? calc.prizeR1A
-                                    : calc.prizeR2A
-                                  : idx === 0
-                                    ? calc.prizeR1B
-                                    : calc.prizeR2B}
+                                ? idx === 0
+                                  ? calc.prizeR1A
+                                  : calc.prizeR2A
+                                : idx === 0
+                                  ? calc.prizeR1B
+                                  : calc.prizeR2B}
                             </td>
                           </tr>
                         </tbody>
@@ -409,7 +428,11 @@ const JurorView = ({
           </div>
           <button
             className="btn btn-success  fw-bold shadow-sm "
-            style={{ borderRadius: "20px", overflow: "hidden",fontSize:"10px" }}
+            style={{
+              borderRadius: "20px",
+              overflow: "hidden",
+              fontSize: "10px",
+            }}
             onClick={onSave}
           >
             🚀 ENVIAR RESULTADOS

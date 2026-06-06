@@ -1,7 +1,7 @@
 import React from "react";
 
 const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
-  const winner = a === b ? (hasData ? "EMPATE" : null) : a > b ? teamA : teamB;
+  const winner = !hasData ? null : a === b ? "EMPATE" : a > b ? teamA : teamB;
   return (
     <div
       className="card border-0 shadow-lg text-white mb-5"
@@ -15,14 +15,24 @@ const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
       <div className="card-body p-3 d-flex flex-column justify-content-between text-center">
         <div
           className="text-uppercase opacity-75 fw-bold mb-3 mt-2"
-          style={{ fontSize: "clamp(1rem, 1.5vw, 1.4rem)", letterSpacing: "2px" }}
+          style={{
+            fontSize: "clamp(1rem, 1.5vw, 1.4rem)",
+            letterSpacing: "2px",
+          }}
         >
           {label}
         </div>
 
         <div className="d-flex align-items-center justify-content-around my-3">
           <div className="text-center" style={{ flex: 1 }}>
-            <div className="m-0 fw-bold" style={{ color: "#ff9800", fontSize: "clamp(3rem, 5vw, 4.5rem)", lineHeight: "1" }}>
+            <div
+              className="m-0 fw-bold"
+              style={{
+                color: "#ff9800",
+                fontSize: "clamp(3rem, 5vw, 4.5rem)",
+                lineHeight: "1",
+              }}
+            >
               {a}
             </div>
             <div
@@ -32,9 +42,21 @@ const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
               {teamA}
             </div>
           </div>
-          <div className="opacity-25 fw-bold mx-2" style={{ fontSize: "clamp(1.5rem, 2vw, 2rem)" }}>VS</div>
+          <div
+            className="opacity-25 fw-bold mx-2"
+            style={{ fontSize: "clamp(1.5rem, 2vw, 2rem)" }}
+          >
+            VS
+          </div>
           <div className="text-center" style={{ flex: 1 }}>
-            <div className="m-0 fw-bold" style={{ color: "#ff9800", fontSize: "clamp(3rem, 5vw, 4.5rem)", lineHeight: "1" }}>
+            <div
+              className="m-0 fw-bold"
+              style={{
+                color: "#ff9800",
+                fontSize: "clamp(3rem, 5vw, 4.5rem)",
+                lineHeight: "1",
+              }}
+            >
               {b}
             </div>
             <div

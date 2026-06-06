@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { supabase } from "../supabase";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -64,7 +64,35 @@ const AdminView = ({ db, onBack, onReset, config }) => {
     });
   }, [db, jurors]);
 
-  const allVoted = jurors.every((j) => db[j.id]?.submitted);
+  // Verificamos estrictamente que los 3 jurados hayan presionado "Enviar"
+  const allVoted = useMemo(() => {
+    return jurors.every((j) => db[j.id] && db[j.id].submitted === true);
+  }, [db, jurors]);
+
+  // Estado para mantener los resultados "congelados" de la última votación exitosa
+  const [persistedResults, setPersistedResults] = useState(null);
+
+  useEffect(() => {
+    if (allVoted) {
+      // Cuando los tres votan, guardamos esta "foto" de los resultados
+      setPersistedResults({
+        totalA,
+        totalB,
+        breakdown,
+        jurorResults,
+      });
+    } else {
+      // Si se limpia el evento por completo, reseteamos la persistencia
+      const anyActivity = jurors.some((j) => db[j.id]);
+      if (!anyActivity) setPersistedResults(null);
+    }
+  }, [allVoted, totalA, totalB, breakdown, jurorResults, db, jurors]);
+
+  // Determinar si hay algo oficial o parcial que mostrar
+  const showRes = allVoted || !!persistedResults;
+  const rData = allVoted
+    ? { totalA, totalB, breakdown, jurorResults }
+    : persistedResults;
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
@@ -341,49 +369,53 @@ const AdminView = ({ db, onBack, onReset, config }) => {
           {/* Visual Cards Grid - Vertical List */}
           <div className="row justify-content-center mb-5">
             <div className="col-lg-6 col-md-8">
-              {(breakdown.individualGames || []).map((win, i) => (
+              {(rData?.breakdown?.individualGames || []).map((win, i) => (
                 <div className="mb-4" key={`card-juego-${i}`}>
                   <CategoryWinnerCard
                     label={`Juego #${i + 1}`}
-                    a={allVoted ? (win === "A" ? 6 : 0) : "-"}
-                    b={allVoted ? (win === "B" ? 6 : 0) : "-"}
+                    a={showRes ? (win === "A" ? 6 : 0) : 0}
+                    b={showRes ? (win === "B" ? 6 : 0) : 0}
                     teamA={teamA}
                     teamB={teamB}
-                    hasData={allVoted}
+                    hasData={showRes}
                   />
                 </div>
               ))}
               {[
                 {
                   label: "Popurrí Alternativo",
-                  a: breakdown.popA,
-                  b: breakdown.popB,
+                  a: rData?.breakdown?.popA,
+                  b: rData?.breakdown?.popB,
                 },
                 {
                   label: "Popurrí Mascota",
-                  a: breakdown.masA,
-                  b: breakdown.masB,
+                  a: rData?.breakdown?.masA,
+                  b: rData?.breakdown?.masB,
                 },
                 {
                   label: "Popurrí Seleccionado Ritmo 1",
-                  a: breakdown.r1A,
-                  b: breakdown.r1B,
+                  a: rData?.breakdown?.r1A,
+                  b: rData?.breakdown?.r1B,
                 },
                 {
                   label: "Popurrí Seleccionado Ritmo 2",
-                  a: breakdown.r2A,
-                  b: breakdown.r2B,
+                  a: rData?.breakdown?.r2A,
+                  b: rData?.breakdown?.r2B,
                 },
-                { label: "Video Clip", a: breakdown.vidA, b: breakdown.vidB },
+                {
+                  label: "Video Clip",
+                  a: rData?.breakdown?.vidA,
+                  b: rData?.breakdown?.vidB,
+                },
               ].map((cat, i) => (
                 <div className="mb-4" key={`card-cat-${i}`}>
                   <CategoryWinnerCard
                     label={cat.label}
-                    a={allVoted ? cat.a : "-"}
-                    b={allVoted ? cat.b : "-"}
+                    a={showRes ? cat.a || 0 : 0}
+                    b={showRes ? cat.b || 0 : 0}
                     teamA={teamA}
                     teamB={teamB}
-                    hasData={allVoted}
+                    hasData={showRes}
                   />
                 </div>
               ))}
@@ -413,36 +445,36 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       {[
                         {
                           label: "Juegos",
-                          a: breakdown.juegosA,
-                          b: breakdown.juegosB,
+                          a: rData?.breakdown?.juegosA,
+                          b: rData?.breakdown?.juegosB,
                         },
                         {
                           label: "Ganador Popurrí Alternativo",
-                          a: breakdown.popA,
-                          b: breakdown.popB,
+                          a: rData?.breakdown?.popA,
+                          b: rData?.breakdown?.popB,
                         },
                         {
                           label: "Ganador Popurrí Mascota",
-                          a: breakdown.masA,
-                          b: breakdown.masB,
+                          a: rData?.breakdown?.masA,
+                          b: rData?.breakdown?.masB,
                         },
                         {
                           label: "Ganador Popurrí Selec. Ritmo 1",
-                          a: breakdown.r1A,
-                          b: breakdown.r1B,
+                          a: rData?.breakdown?.r1A,
+                          b: rData?.breakdown?.r1B,
                         },
                         {
                           label: "Ganador Popurrí Selec. Ritmo 2",
-                          a: breakdown.r2A,
-                          b: breakdown.r2B,
+                          a: rData?.breakdown?.r2A,
+                          b: rData?.breakdown?.r2B,
                         },
                         {
                           label: "Ganador Video Clip",
-                          a: breakdown.vidA,
-                          b: breakdown.vidB,
+                          a: rData?.breakdown?.vidA,
+                          b: rData?.breakdown?.vidB,
                         },
                       ].map((row, i) => {
-                        const rowWinner = !allVoted
+                        const rowWinner = !showRes
                           ? "PENDIENTE"
                           : row.a === row.b
                             ? "EMPATE"
@@ -455,10 +487,10 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                               {row.label}
                             </td>
                             <td style={{ color: "#ffb74d" }}>
-                              {allVoted ? row.a : "-"}
+                              {showRes ? row.a : "-"}
                             </td>
                             <td style={{ color: "#ffb74d" }}>
-                              {allVoted ? row.b : "-"}
+                              {showRes ? row.b : "-"}
                             </td>
                             <td>
                               <span
@@ -481,19 +513,19 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       <tr>
                         <td className="text-start ps-4">TOTAL ACUMULADO</td>
                         <td className="h4 m-0" style={{ color: "#ff9800" }}>
-                          {allVoted ? totalA : "-"}
+                          {showRes ? rData?.totalA : "-"}
                         </td>
                         <td className="h4 m-0" style={{ color: "#ff9800" }}>
-                          {allVoted ? totalB : "-"}
+                          {showRes ? rData?.totalB : "-"}
                         </td>
                         <td
-                          className={`fw-bold ${allVoted && totalA === totalB ? "text-warning" : "text-info"}`}
+                          className={`fw-bold ${showRes && rData?.totalA === rData?.totalB ? "text-warning" : "text-info"}`}
                         >
-                          {!allVoted
+                          {!showRes
                             ? "PENDIENTE"
-                            : totalA === totalB
+                            : rData?.totalA === rData?.totalB
                               ? "EMPATE"
-                              : totalA > totalB
+                              : rData?.totalA > rData?.totalB
                                 ? teamA
                                 : teamB}
                         </td>
@@ -509,7 +541,9 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             {jurorProgressData.map((jp) => {
               const submitted = jp.progress.submitted;
               const percent = jp.progress.pct;
-              const result = jurorResults.find((r) => r.id === jp.id)?.result;
+              const result = rData?.jurorResults?.find(
+                (r) => r.id === jp.id,
+              )?.result;
               return (
                 <div key={jp.id} className="col-lg-4">
                   <div
@@ -550,8 +584,8 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       ></div>
                     </div>
                     <b className="h5 mb-0">
-                      {teamA}: {result ? result.totalA : "-"} | {teamB}:{" "}
-                      {result ? result.totalB : "-"}
+                      {teamA}: {showRes && result ? result.totalA : 0} | {teamB}
+                      : {showRes && result ? result.totalB : 0}
                     </b>
                     {jp.updatedAt && (
                       <div
@@ -577,14 +611,14 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             <div className="row justify-content-center align-items-center">
               <div className="col-md-5">
                 <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
-                  {allVoted ? totalA : "-"}
+                  {showRes ? rData?.totalA : "-"}
                 </div>
                 <h4 className="text-uppercase">{teamA}</h4>
               </div>
               <div className="col-md-2 display-4 opacity-25">VS</div>
               <div className="col-md-5">
                 <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
-                  {allVoted ? totalB : "-"}
+                  {showRes ? rData?.totalB : "-"}
                 </div>
                 <h4 className="text-uppercase">{teamB}</h4>
               </div>
@@ -592,11 +626,11 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             <div className="mt-5">
               <div className="winner-badge shadow-lg">
                 <h2 className="m-0 fw-bolder text-uppercase tracking-tighter">
-                  {!allVoted
+                  {!allVoted && !persistedResults
                     ? "⏳ ESPERANDO JURADOS..."
-                    : totalA === totalB
+                    : rData?.totalA === rData?.totalB
                       ? "⚖️ EMPATE"
-                      : `🏆 GANADOR: ${totalA > totalB ? teamA : teamB}`}
+                      : `🏆 GANADOR: ${rData?.totalA > rData?.totalB ? teamA : teamB}`}
                 </h2>
               </div>
             </div>

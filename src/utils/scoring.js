@@ -245,3 +245,56 @@ export const calculateConsensus = (db, jurors) => {
     breakdown,
   };
 };
+
+export const calculateJurorProgress = (data) => {
+  if (!data) {
+    return {
+      isStarted: false,
+      submitted: false,
+      juegos: { filled: 0, total: 3 },
+      popurri: { filled: 0, total: 11 },
+      mascota: { filled: 0, total: 5 },
+      ritmo1: { filled: 0, total: 10 },
+      ritmo2: { filled: 0, total: 10 },
+      videoclip: { filled: 0, total: 12 },
+      totalFilled: 0,
+      totalItems: 51,
+      pct: 0,
+    };
+  }
+
+  const juegosFilled = data.juegos ? data.juegos.filter(x => x !== null && x !== "").length : 0;
+  const popurriFilled = data.popurri ? data.popurri.filter(x => x !== null && x !== "").length : 0;
+  const mascotaFilled = data.mascota ? data.mascota.filter(x => x !== null && x !== "").length : 0;
+
+  const ritmo1Filled = data.ritmo1
+    ? (Object.values(data.ritmo1.A || {}).filter(x => x !== "").length + Object.values(data.ritmo1.B || {}).filter(x => x !== "").length)
+    : 0;
+
+  const ritmo2Filled = data.ritmo2
+    ? (Object.values(data.ritmo2.A || {}).filter(x => x !== "").length + Object.values(data.ritmo2.B || {}).filter(x => x !== "").length)
+    : 0;
+
+  const videoclipFilled = data.videoclip
+    ? (Object.values(data.videoclip.A || {}).filter(x => x !== "").length + Object.values(data.videoclip.B || {}).filter(x => x !== "").length)
+    : 0;
+
+  const totalFilled = juegosFilled + popurriFilled + mascotaFilled + ritmo1Filled + ritmo2Filled + videoclipFilled;
+  const totalItems = 51;
+  const pct = Math.round((totalFilled / totalItems) * 100);
+
+  return {
+    isStarted: totalFilled > 0 || !!data.submitted,
+    submitted: !!data.submitted,
+    juegos: { filled: juegosFilled, total: 3 },
+    popurri: { filled: popurriFilled, total: 11 },
+    mascota: { filled: mascotaFilled, total: 5 },
+    ritmo1: { filled: ritmo1Filled, total: 10 },
+    ritmo2: { filled: ritmo2Filled, total: 10 },
+    videoclip: { filled: videoclipFilled, total: 12 },
+    totalFilled,
+    totalItems,
+    pct,
+  };
+};
+

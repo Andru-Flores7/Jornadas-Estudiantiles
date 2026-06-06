@@ -50,7 +50,11 @@ const App = () => {
           if (row.juror_id === "config") {
             setConfig(row.payload);
           } else {
-            newDb[row.juror_id] = normalizePayload(row.payload);
+            const parsed = normalizePayload(row.payload);
+            if (parsed) {
+              parsed.updated_at = row.updated_at;
+            }
+            newDb[row.juror_id] = parsed;
           }
         });
         setDb(newDb);
@@ -79,11 +83,16 @@ const App = () => {
 
           const newJurorId = payload.new.juror_id;
           const newPayload = payload.new.payload;
+          const updatedAt = payload.new.updated_at;
 
           if (newJurorId === "config") {
             setConfig(newPayload);
           } else {
-            setDb((prev) => ({ ...prev, [newJurorId]: normalizePayload(newPayload) }));
+            const parsed = normalizePayload(newPayload);
+            if (parsed) {
+              parsed.updated_at = updatedAt;
+            }
+            setDb((prev) => ({ ...prev, [newJurorId]: parsed }));
           }
         },
       )

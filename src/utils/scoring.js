@@ -92,6 +92,7 @@ export const initialConfig = {
 
 export const calculateFinal = (data) => {
   if (!data) return { a: 0, b: 0 };
+  // Cada juego ganado otorga 6 puntos (acumulativo, máximo 18 pts)
   const ptsJuegosA = data.juegos.filter((v) => v === "A").length * 6;
   const ptsJuegosB = data.juegos.filter((v) => v === "B").length * 6;
 
@@ -187,9 +188,8 @@ export const calculateConsensus = (db, jurors) => {
 
   const individualResults = submittedIds.map((id) => calculateFinal(db[id]));
 
-  // 1. Juegos (6 pts por juego, por mayoría)
-  let juegosA = 0,
-    juegosB = 0;
+  // 1. Juegos: Cada juego ganado por consenso otorga 6 puntos (acumulativo)
+  let juegosA = 0, juegosB = 0;
   const individualGames = [];
   for (let i = 0; i < 3; i++) {
     let votesA = 0,
@@ -297,4 +297,3 @@ export const calculateJurorProgress = (data) => {
     pct,
   };
 };
-

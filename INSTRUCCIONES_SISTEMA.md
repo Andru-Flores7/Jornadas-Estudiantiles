@@ -20,17 +20,20 @@ El administrador es el encargado de la logística del sistema y tiene control to
 Para evitar que los puntos se "tripliquen" al tener tres jurados, el sistema utiliza una **Lógica de Consenso por Mayoría** en las categorías objetivas:
 
 ### 1. Juegos (6 pts c/u)
-*   Hay 3 juegos por encuentro.
-*   Cada jurado marca quién ganó el juego en su planilla.
-*   **Cómputo**: El sistema mira los votos de los 3 jurados. El equipo que tenga al menos 2 votos a favor gana los 6 puntos de ese juego.
+
+- Se disputan 3 juegos por encuentro.
+- Cada jurado marca individualmente quién ganó cada juego.
+- **Cómputo por Consenso**: El sistema determina el ganador de cada juego por mayoría de votos de los jurados. El equipo ganador de cada juego recibe **6 puntos**. El total máximo en esta categoría es de **18 puntos** (6 pts x 3 juegos).
 
 ### 2. Ganadores de Categoría (Popurrí, Mascota, Ritmos, Videoclip)
-*   **Apreciación Individual**: Cada jurado evalúa y decide un ganador según su criterio.
-*   **Cómputo por Mayoría**: El equipo que sea declarado ganador por la mayoría de los jurados (ej: 2 de 3) se lleva el premio único de la categoría. Esto evita que los puntos se dupliquen o tripliquen.
+
+- **Apreciación Individual**: Cada jurado evalúa y decide un ganador según su criterio.
+- **Cómputo por Mayoría**: El equipo que sea declarado ganador por la mayoría de los jurados (ej: 2 de 3) se lleva el premio único de la categoría. Esto evita que los puntos se dupliquen o tripliquen.
 
 ### 3. Puntos de Desempeño (Ritmos y Videoclip)
-*   **Importante**: Para mantener un puntaje total controlado de **48 puntos**, el sistema ya NO suma las calificaciones numéricas base de los jurados al total acumulado. Estas calificaciones se utilizan únicamente para determinar de forma interna quién es el ganador del premio de la categoría.
-*   **Puntajes Fijos**: Cada categoría otorga un puntaje fijo al ganador por consenso (ej: 15 pts para Videoclip, 3 pts para Mascota).
+
+- **Importante**: Para mantener un puntaje total controlado de **48 puntos**, el sistema ya NO suma las calificaciones numéricas base de los jurados al total acumulado. Estas calificaciones se utilizan únicamente para determinar de forma interna quién es el ganador del premio de la categoría.
+- **Puntajes Fijos**: Cada categoría otorga un puntaje fijo al ganador por consenso (ej: 15 pts para Videoclip, 3 pts para Mascota).
 
 ---
 
@@ -44,7 +47,7 @@ Para evitar que los puntos se "tripliquen" al tener tres jurados, el sistema uti
 
 ## 💡 Preguntas Frecuentes
 
-*   **¿Por qué mis puntos no coinciden exactamente con la suma de mi planilla?**
-    El total del Administrador aplica la lógica de consenso. Si tú votaste por el Equipo A en un juego, pero los otros dos jurados votaron por el Equipo B, los puntos irán al Equipo B (quien realmente ganó el juego).
-*   **¿Qué pasa si solo hay un jurado cargando datos?**
-    El sistema tomará la decisión de ese único jurado como la "mayoría" hasta que los demás envíen sus votos.
+- **¿Por qué mis puntos no coinciden exactamente con la suma de mi planilla?**
+  El total del Administrador aplica la lógica de consenso. Si tú votaste por el Equipo A en un juego, pero los otros dos jurados votaron por el Equipo B, los puntos irán al Equipo B (quien realmente ganó el juego).
+- **¿Qué pasa si solo hay un jurado cargando datos?**
+  El sistema tomará la decisión de ese único jurado como la "mayoría" hasta que los demás envíen sus votos.

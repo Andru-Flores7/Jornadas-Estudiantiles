@@ -511,7 +511,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                     </tbody>
                     <tfoot className="table-dark">
                       <tr>
-                        <td className="text-start ps-4">TOTAL ACUMULADO</td>
+                        <td className="text-start ps-4">RESULTADO PARCIAL</td>
                         <td className="h4 m-0" style={{ color: "#ff9800" }}>
                           {showRes ? rData?.totalA : "-"}
                         </td>

@@ -3,7 +3,11 @@ import { supabase } from "../supabase";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import confetti from "canvas-confetti";
-import { calculateConsensus, calculateFinal, calculateJurorProgress } from "../utils/scoring";
+import {
+  calculateConsensus,
+  calculateFinal,
+  calculateJurorProgress,
+} from "../utils/scoring";
 import CategoryWinnerCard from "./CategoryWinnerCard";
 
 const AdminView = ({ db, onBack, onReset, config }) => {
@@ -11,27 +15,38 @@ const AdminView = ({ db, onBack, onReset, config }) => {
   const teamB = config.teamB;
 
   // Memoize jurors so it doesn't re-create the array on every render
-  const jurors = useMemo(() => [
-    { id: "juror1", label: config.jurors.juror1 },
-    { id: "juror2", label: config.jurors.juror2 },
-    { id: "juror3", label: config.jurors.juror3 },
-  ], [config.jurors]);
+  const jurors = useMemo(
+    () => [
+      { id: "juror1", label: config.jurors.juror1 },
+      { id: "juror2", label: config.jurors.juror2 },
+      { id: "juror3", label: config.jurors.juror3 },
+    ],
+    [config.jurors],
+  );
 
   const [editConfig, setEditConfig] = useState(config);
   const [isSaving, setIsSaving] = useState(false);
   const [viewTab, setViewTab] = useState("results"); // "results" or "live"
-  const [expandedJuror, setExpandedJuror] = useState({ juror1: false, juror2: false, juror3: false });
+  const [expandedJuror, setExpandedJuror] = useState({
+    juror1: false,
+    juror2: false,
+    juror3: false,
+  });
 
   // Memoize consensus calculation — only recomputes when db or jurors change
   const { totalA, totalB, breakdown } = useMemo(
     () => calculateConsensus(db, jurors),
-    [db, jurors]
+    [db, jurors],
   );
 
   // Memoize per-juror results — avoids calling calculateFinal on every render
   const jurorResults = useMemo(
-    () => jurors.map((j) => ({ id: j.id, result: db[j.id] ? calculateFinal(db[j.id]) : null })),
-    [db, jurors]
+    () =>
+      jurors.map((j) => ({
+        id: j.id,
+        result: db[j.id] ? calculateFinal(db[j.id]) : null,
+      })),
+    [db, jurors],
   );
 
   // Memoize juror progress metrics
@@ -42,13 +57,14 @@ const AdminView = ({ db, onBack, onReset, config }) => {
         id: j.id,
         label: j.label,
         progress,
-        updatedAt: db[j.id]?.updated_at ? new Date(db[j.id].updated_at).toLocaleTimeString() : null,
+        updatedAt: db[j.id]?.updated_at
+          ? new Date(db[j.id].updated_at).toLocaleTimeString()
+          : null,
       };
     });
   }, [db, jurors]);
 
   const allVoted = jurors.every((j) => db[j.id]?.submitted);
-
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
@@ -182,7 +198,12 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             width: "20px",
             height: "20px",
             fontSize: "9px",
-            background: val === "A" ? "#ff9800" : val === "B" ? "#2196f3" : "rgba(255,255,255,0.15)",
+            background:
+              val === "A"
+                ? "#ff9800"
+                : val === "B"
+                  ? "#2196f3"
+                  : "rgba(255,255,255,0.15)",
             color: val ? "#000" : "rgba(255,255,255,0.4)",
             border: val ? "none" : "1px solid rgba(255,255,255,0.1)",
             transition: "all 0.3s ease",
@@ -190,10 +211,14 @@ const AdminView = ({ db, onBack, onReset, config }) => {
           title={`Ronda ${i + 1}: ${val ? (val === "A" ? teamA : teamB) : "Pendiente"}`}
         >
           {val || "-"}
-        </span>
+        </span>,
       );
     }
-    return <div className="d-flex gap-1 flex-wrap justify-content-center">{dots}</div>;
+    return (
+      <div className="d-flex gap-1 flex-wrap justify-content-center">
+        {dots}
+      </div>
+    );
   };
 
   return (
@@ -290,7 +315,10 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
       {/* Selector de pestañas */}
       <div className="d-flex justify-content-center mb-5">
-        <div className="btn-group p-1" style={{ background: "rgba(255,255,255,0.08)", borderRadius: "16px" }}>
+        <div
+          className="btn-group p-1"
+          style={{ background: "rgba(255,255,255,0.08)", borderRadius: "16px" }}
+        >
           <button
             className={`btn px-4 py-2 ${viewTab === "results" ? "btn-primary shadow-sm" : "btn-link text-white text-decoration-none"}`}
             style={{ borderRadius: "12px", border: "none" }}
@@ -331,7 +359,11 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                   a: breakdown.popA,
                   b: breakdown.popB,
                 },
-                { label: "Popurrí Mascota", a: breakdown.masA, b: breakdown.masB },
+                {
+                  label: "Popurrí Mascota",
+                  a: breakdown.masA,
+                  b: breakdown.masB,
+                },
                 {
                   label: "Popurrí Seleccionado Ritmo 1",
                   a: breakdown.r1A,
@@ -358,8 +390,8 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             </div>
           </div>
 
-          <div className="row g-4 mb-5">
-            <div className="col-lg-8">
+          <div className="row g-4 mb-4">
+            <div className="col-12">
               <div
                 className="card shadow border-0 h-100"
                 style={{ borderRadius: "20px", overflow: "hidden" }}
@@ -471,55 +503,68 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                 </div>
               </div>
             </div>
-            <div className="col-lg-4">
-              <div className="d-flex flex-column gap-3 h-100">
-                {jurorProgressData.map((jp) => {
-                  const submitted = jp.progress.submitted;
-                  const percent = jp.progress.pct;
-                  const result = jurorResults.find((r) => r.id === jp.id)?.result;
-                  return (
-                    <div
-                      key={jp.id}
-                      className={`card shadow-sm border-0 p-3 text-center flex-grow-1 d-flex flex-column justify-content-center ${
-                        submitted
-                          ? "border-start border-success border-5"
-                          : jp.progress.isStarted
-                            ? "border-start border-warning border-5"
-                            : "opacity-50"
-                      }`}
-                    >
-                      <h6 className="mb-1">{jp.label}</h6>
-                      <div className="small text-uppercase opacity-75 mb-2 d-flex justify-content-center align-items-center gap-2">
-                        {submitted ? (
-                          <span className="badge bg-success">✅ Recibido</span>
-                        ) : jp.progress.isStarted ? (
-                          <span className="badge bg-warning text-dark">
-                            ✍️ Votando ({percent}%)
-                          </span>
-                        ) : (
-                          <span className="badge bg-secondary">⏳ Pendiente</span>
-                        )}
-                      </div>
-                      <div className="progress mb-2" style={{ height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px" }}>
-                        <div
-                          className="progress-bar bg-success"
-                          style={{ width: `${percent}%`, transition: "width 0.4s ease" }}
-                        ></div>
-                      </div>
-                      <b className="h5 mb-0">
-                        {teamA}: {result ? result.totalA : "-"} |{" "}
-                        {teamB}: {result ? result.totalB : "-"}
-                      </b>
-                      {jp.updatedAt && (
-                        <div className="small opacity-50 text-end mt-2" style={{ fontSize: "0.7rem" }}>
-                          Sinc: {jp.updatedAt}
-                        </div>
+          </div>
+
+          <div className="row g-3 mb-5">
+            {jurorProgressData.map((jp) => {
+              const submitted = jp.progress.submitted;
+              const percent = jp.progress.pct;
+              const result = jurorResults.find((r) => r.id === jp.id)?.result;
+              return (
+                <div key={jp.id} className="col-lg-4">
+                  <div
+                    className={`card shadow-sm border-0 p-3 text-center h-100 d-flex flex-column justify-content-center ${
+                      submitted
+                        ? "border-start border-success border-5"
+                        : jp.progress.isStarted
+                          ? "border-start border-warning border-5"
+                          : "opacity-50"
+                    }`}
+                  >
+                    <h6 className="mb-1">{jp.label}</h6>
+                    <div className="small text-uppercase opacity-75 mb-2 d-flex justify-content-center align-items-center gap-2">
+                      {submitted ? (
+                        <span className="badge bg-success">✅ Recibido</span>
+                      ) : jp.progress.isStarted ? (
+                        <span className="badge bg-warning text-dark">
+                          ✍️ Votando ({percent}%)
+                        </span>
+                      ) : (
+                        <span className="badge bg-secondary">⏳ Pendiente</span>
                       )}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                    <div
+                      className="progress mb-2"
+                      style={{
+                        height: "6px",
+                        background: "rgba(255,255,255,0.1)",
+                        borderRadius: "3px",
+                      }}
+                    >
+                      <div
+                        className="progress-bar bg-success"
+                        style={{
+                          width: `${percent}%`,
+                          transition: "width 0.4s ease",
+                        }}
+                      ></div>
+                    </div>
+                    <b className="h5 mb-0">
+                      {teamA}: {result ? result.totalA : "-"} | {teamB}:{" "}
+                      {result ? result.totalB : "-"}
+                    </b>
+                    {jp.updatedAt && (
+                      <div
+                        className="small opacity-50 text-end mt-2"
+                        style={{ fontSize: "0.7rem" }}
+                      >
+                        Sinc: {jp.updatedAt}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <div
@@ -587,7 +632,9 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                         {submitted ? (
                           <span className="badge bg-success">Enviado</span>
                         ) : isStarted ? (
-                          <span className="badge bg-warning text-dark">Votando {pct}%</span>
+                          <span className="badge bg-warning text-dark">
+                            Votando {pct}%
+                          </span>
                         ) : (
                           <span className="badge bg-secondary">Pendiente</span>
                         )}
@@ -595,15 +642,28 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                       {/* Barra de progreso */}
                       <div className="mb-4">
-                        <div className="d-flex justify-content-between small opacity-75 mb-1" style={{ fontSize: "0.75rem" }}>
+                        <div
+                          className="d-flex justify-content-between small opacity-75 mb-1"
+                          style={{ fontSize: "0.75rem" }}
+                        >
                           <span>Progreso de Planilla</span>
                           <span>{jp.progress.totalFilled} / 51 campos</span>
                         </div>
-                        <div className="progress" style={{ height: "10px", borderRadius: "5px", background: "rgba(255,255,255,0.1)" }}>
+                        <div
+                          className="progress"
+                          style={{
+                            height: "10px",
+                            borderRadius: "5px",
+                            background: "rgba(255,255,255,0.1)",
+                          }}
+                        >
                           <div
                             className={`progress-bar ${submitted ? "bg-success" : "bg-warning"}`}
                             role="progressbar"
-                            style={{ width: `${pct}%`, transition: "width 0.4s ease" }}
+                            style={{
+                              width: `${pct}%`,
+                              transition: "width 0.4s ease",
+                            }}
                             aria-valuenow={pct}
                             aria-valuemin="0"
                             aria-valuemax="100"
@@ -614,13 +674,36 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       {/* Puntajes Provisionales */}
                       <div className="d-flex justify-content-around align-items-center py-2 mb-4 bg-dark bg-opacity-25 rounded border border-white border-opacity-10">
                         <div className="text-center">
-                          <div className="small text-uppercase opacity-50" style={{ fontSize: "0.65rem" }}>{teamA}</div>
-                          <div className="h4 m-0 fw-bold" style={{ color: "#ff9800" }}>{result ? result.totalA : 0}</div>
+                          <div
+                            className="small text-uppercase opacity-50"
+                            style={{ fontSize: "0.65rem" }}
+                          >
+                            {teamA}
+                          </div>
+                          <div
+                            className="h4 m-0 fw-bold"
+                            style={{ color: "#ff9800" }}
+                          >
+                            {result ? result.totalA : 0}
+                          </div>
                         </div>
-                        <div className="vr h-100 opacity-25" style={{ minHeight: "30px" }}></div>
+                        <div
+                          className="vr h-100 opacity-25"
+                          style={{ minHeight: "30px" }}
+                        ></div>
                         <div className="text-center">
-                          <div className="small text-uppercase opacity-50" style={{ fontSize: "0.65rem" }}>{teamB}</div>
-                          <div className="h4 m-0 fw-bold" style={{ color: "#ff9800" }}>{result ? result.totalB : 0}</div>
+                          <div
+                            className="small text-uppercase opacity-50"
+                            style={{ fontSize: "0.65rem" }}
+                          >
+                            {teamB}
+                          </div>
+                          <div
+                            className="h4 m-0 fw-bold"
+                            style={{ color: "#ff9800" }}
+                          >
+                            {result ? result.totalB : 0}
+                          </div>
                         </div>
                       </div>
 
@@ -628,7 +711,10 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       <div className="d-flex flex-column gap-3 my-4">
                         {/* Juegos */}
                         <div>
-                          <div className="small opacity-75 fw-bold mb-1" style={{ fontSize: "0.75rem" }}>
+                          <div
+                            className="small opacity-75 fw-bold mb-1"
+                            style={{ fontSize: "0.75rem" }}
+                          >
                             Juegos ({jp.progress.juegos.filled}/3):
                           </div>
                           {renderDots(dataObj?.juegos, 3)}
@@ -636,15 +722,22 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                         {/* Popurrí */}
                         <div>
-                          <div className="small opacity-75 fw-bold mb-1" style={{ fontSize: "0.75rem" }}>
-                            Popurrí Alternativo ({jp.progress.popurri.filled}/11):
+                          <div
+                            className="small opacity-75 fw-bold mb-1"
+                            style={{ fontSize: "0.75rem" }}
+                          >
+                            Popurrí Alternativo ({jp.progress.popurri.filled}
+                            /11):
                           </div>
                           {renderDots(dataObj?.popurri, 11)}
                         </div>
 
                         {/* Mascota */}
                         <div>
-                          <div className="small opacity-75 fw-bold mb-1" style={{ fontSize: "0.75rem" }}>
+                          <div
+                            className="small opacity-75 fw-bold mb-1"
+                            style={{ fontSize: "0.75rem" }}
+                          >
                             Popurrí Mascota ({jp.progress.mascota.filled}/5):
                           </div>
                           {renderDots(dataObj?.mascota, 5)}
@@ -653,13 +746,23 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                         {/* Ritmo 1 y 2 */}
                         <div className="row g-2">
                           <div className="col-6">
-                            <div className="small opacity-75 fw-bold" style={{ fontSize: "0.75rem" }}>Ritmo 1</div>
+                            <div
+                              className="small opacity-75 fw-bold"
+                              style={{ fontSize: "0.75rem" }}
+                            >
+                              Ritmo 1
+                            </div>
                             <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2">
                               {jp.progress.ritmo1.filled} / 10
                             </div>
                           </div>
                           <div className="col-6">
-                            <div className="small opacity-75 fw-bold" style={{ fontSize: "0.75rem" }}>Ritmo 2</div>
+                            <div
+                              className="small opacity-75 fw-bold"
+                              style={{ fontSize: "0.75rem" }}
+                            >
+                              Ritmo 2
+                            </div>
                             <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2">
                               {jp.progress.ritmo2.filled} / 10
                             </div>
@@ -668,7 +771,12 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                         {/* Video clip */}
                         <div>
-                          <div className="small opacity-75 fw-bold" style={{ fontSize: "0.75rem" }}>Video Clip</div>
+                          <div
+                            className="small opacity-75 fw-bold"
+                            style={{ fontSize: "0.75rem" }}
+                          >
+                            Video Clip
+                          </div>
                           <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2">
                             {jp.progress.videoclip.filled} / 12 campos
                           </div>
@@ -677,67 +785,191 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                       {/* Detalle ampliado collapsible */}
                       {isExpanded && (
-                        <div className="mt-3 p-3 bg-dark bg-opacity-50 rounded shadow-inner" style={{ fontSize: "0.82rem", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        <div
+                          className="mt-3 p-3 bg-dark bg-opacity-50 rounded shadow-inner"
+                          style={{
+                            fontSize: "0.82rem",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                          }}
+                        >
                           <div className="row g-3">
                             <div className="col-6 border-end border-secondary border-opacity-25">
-                              <h6 className="text-warning text-uppercase mb-2" style={{ fontSize: "0.7rem", fontWeight: "700" }}>{teamA}</h6>
+                              <h6
+                                className="text-warning text-uppercase mb-2"
+                                style={{
+                                  fontSize: "0.7rem",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                {teamA}
+                              </h6>
                               <div className="d-flex flex-column gap-2">
                                 <div>
-                                  <div className="text-muted fw-bold mb-1" style={{ fontSize: "0.65rem" }}>Ritmo 1:</div>
-                                  {Object.entries(dataObj?.ritmo1?.A || {}).map(([k, v]) => (
-                                    <div key={k} className="d-flex justify-content-between pe-2 lh-sm my-1">
-                                      <span className="opacity-75 text-capitalize" style={{ fontSize: "0.65rem" }}>{k}:</span>
-                                      <span className="fw-bold">{v || "-"}</span>
-                                    </div>
-                                  ))}
+                                  <div
+                                    className="text-muted fw-bold mb-1"
+                                    style={{ fontSize: "0.65rem" }}
+                                  >
+                                    Ritmo 1:
+                                  </div>
+                                  {Object.entries(dataObj?.ritmo1?.A || {}).map(
+                                    ([k, v]) => (
+                                      <div
+                                        key={k}
+                                        className="d-flex justify-content-between pe-2 lh-sm my-1"
+                                      >
+                                        <span
+                                          className="opacity-75 text-capitalize"
+                                          style={{ fontSize: "0.65rem" }}
+                                        >
+                                          {k}:
+                                        </span>
+                                        <span className="fw-bold">
+                                          {v || "-"}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )}
                                 </div>
                                 <div>
-                                  <div className="text-muted fw-bold mb-1" style={{ fontSize: "0.65rem" }}>Ritmo 2:</div>
-                                  {Object.entries(dataObj?.ritmo2?.A || {}).map(([k, v]) => (
-                                    <div key={k} className="d-flex justify-content-between pe-2 lh-sm my-1">
-                                      <span className="opacity-75 text-capitalize" style={{ fontSize: "0.65rem" }}>{k}:</span>
-                                      <span className="fw-bold">{v || "-"}</span>
-                                    </div>
-                                  ))}
+                                  <div
+                                    className="text-muted fw-bold mb-1"
+                                    style={{ fontSize: "0.65rem" }}
+                                  >
+                                    Ritmo 2:
+                                  </div>
+                                  {Object.entries(dataObj?.ritmo2?.A || {}).map(
+                                    ([k, v]) => (
+                                      <div
+                                        key={k}
+                                        className="d-flex justify-content-between pe-2 lh-sm my-1"
+                                      >
+                                        <span
+                                          className="opacity-75 text-capitalize"
+                                          style={{ fontSize: "0.65rem" }}
+                                        >
+                                          {k}:
+                                        </span>
+                                        <span className="fw-bold">
+                                          {v || "-"}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )}
                                 </div>
                                 <div>
-                                  <div className="text-muted fw-bold mb-1" style={{ fontSize: "0.65rem" }}>Video Clip:</div>
-                                  {Object.entries(dataObj?.videoclip?.A || {}).map(([k, v]) => (
-                                    <div key={k} className="d-flex justify-content-between pe-2 lh-sm my-1">
-                                      <span className="opacity-75 text-capitalize" style={{ fontSize: "0.63rem" }}>{k}:</span>
-                                      <span className="fw-bold">{v || "-"}</span>
+                                  <div
+                                    className="text-muted fw-bold mb-1"
+                                    style={{ fontSize: "0.65rem" }}
+                                  >
+                                    Video Clip:
+                                  </div>
+                                  {Object.entries(
+                                    dataObj?.videoclip?.A || {},
+                                  ).map(([k, v]) => (
+                                    <div
+                                      key={k}
+                                      className="d-flex justify-content-between pe-2 lh-sm my-1"
+                                    >
+                                      <span
+                                        className="opacity-75 text-capitalize"
+                                        style={{ fontSize: "0.63rem" }}
+                                      >
+                                        {k}:
+                                      </span>
+                                      <span className="fw-bold">
+                                        {v || "-"}
+                                      </span>
                                     </div>
                                   ))}
                                 </div>
                               </div>
                             </div>
                             <div className="col-6">
-                              <h6 className="text-info text-uppercase mb-2" style={{ fontSize: "0.7rem", fontWeight: "700" }}>{teamB}</h6>
+                              <h6
+                                className="text-info text-uppercase mb-2"
+                                style={{
+                                  fontSize: "0.7rem",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                {teamB}
+                              </h6>
                               <div className="d-flex flex-column gap-2">
                                 <div>
-                                  <div className="text-muted fw-bold mb-1" style={{ fontSize: "0.65rem" }}>Ritmo 1:</div>
-                                  {Object.entries(dataObj?.ritmo1?.B || {}).map(([k, v]) => (
-                                    <div key={k} className="d-flex justify-content-between lh-sm my-1">
-                                      <span className="opacity-75 text-capitalize" style={{ fontSize: "0.65rem" }}>{k}:</span>
-                                      <span className="fw-bold">{v || "-"}</span>
-                                    </div>
-                                  ))}
+                                  <div
+                                    className="text-muted fw-bold mb-1"
+                                    style={{ fontSize: "0.65rem" }}
+                                  >
+                                    Ritmo 1:
+                                  </div>
+                                  {Object.entries(dataObj?.ritmo1?.B || {}).map(
+                                    ([k, v]) => (
+                                      <div
+                                        key={k}
+                                        className="d-flex justify-content-between lh-sm my-1"
+                                      >
+                                        <span
+                                          className="opacity-75 text-capitalize"
+                                          style={{ fontSize: "0.65rem" }}
+                                        >
+                                          {k}:
+                                        </span>
+                                        <span className="fw-bold">
+                                          {v || "-"}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )}
                                 </div>
                                 <div>
-                                  <div className="text-muted fw-bold mb-1" style={{ fontSize: "0.65rem" }}>Ritmo 2:</div>
-                                  {Object.entries(dataObj?.ritmo2?.B || {}).map(([k, v]) => (
-                                    <div key={k} className="d-flex justify-content-between lh-sm my-1">
-                                      <span className="opacity-75 text-capitalize" style={{ fontSize: "0.65rem" }}>{k}:</span>
-                                      <span className="fw-bold">{v || "-"}</span>
-                                    </div>
-                                  ))}
+                                  <div
+                                    className="text-muted fw-bold mb-1"
+                                    style={{ fontSize: "0.65rem" }}
+                                  >
+                                    Ritmo 2:
+                                  </div>
+                                  {Object.entries(dataObj?.ritmo2?.B || {}).map(
+                                    ([k, v]) => (
+                                      <div
+                                        key={k}
+                                        className="d-flex justify-content-between lh-sm my-1"
+                                      >
+                                        <span
+                                          className="opacity-75 text-capitalize"
+                                          style={{ fontSize: "0.65rem" }}
+                                        >
+                                          {k}:
+                                        </span>
+                                        <span className="fw-bold">
+                                          {v || "-"}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )}
                                 </div>
                                 <div>
-                                  <div className="text-muted fw-bold mb-1" style={{ fontSize: "0.65rem" }}>Video Clip:</div>
-                                  {Object.entries(dataObj?.videoclip?.B || {}).map(([k, v]) => (
-                                    <div key={k} className="d-flex justify-content-between lh-sm my-1">
-                                      <span className="opacity-75 text-capitalize" style={{ fontSize: "0.63rem" }}>{k}:</span>
-                                      <span className="fw-bold">{v || "-"}</span>
+                                  <div
+                                    className="text-muted fw-bold mb-1"
+                                    style={{ fontSize: "0.65rem" }}
+                                  >
+                                    Video Clip:
+                                  </div>
+                                  {Object.entries(
+                                    dataObj?.videoclip?.B || {},
+                                  ).map(([k, v]) => (
+                                    <div
+                                      key={k}
+                                      className="d-flex justify-content-between lh-sm my-1"
+                                    >
+                                      <span
+                                        className="opacity-75 text-capitalize"
+                                        style={{ fontSize: "0.63rem" }}
+                                      >
+                                        {k}:
+                                      </span>
+                                      <span className="fw-bold">
+                                        {v || "-"}
+                                      </span>
                                     </div>
                                   ))}
                                 </div>
@@ -752,17 +984,30 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                     <div className="mt-4 border-top border-white border-opacity-10 pt-3">
                       <button
                         className="btn btn-outline-primary btn-sm w-100 fw-bold"
-                        onClick={() => setExpandedJuror((prev) => ({ ...prev, [jp.id]: !prev[jp.id] }))}
+                        onClick={() =>
+                          setExpandedJuror((prev) => ({
+                            ...prev,
+                            [jp.id]: !prev[jp.id],
+                          }))
+                        }
                         disabled={!isStarted}
                       >
-                        {isExpanded ? "🔼 Ocultar Detalles" : "🔽 Ver Planilla Detallada"}
+                        {isExpanded
+                          ? "🔼 Ocultar Detalles"
+                          : "🔽 Ver Planilla Detallada"}
                       </button>
                       {jp.updatedAt ? (
-                        <div className="text-end small opacity-50 mt-2" style={{ fontSize: "0.65rem" }}>
+                        <div
+                          className="text-end small opacity-50 mt-2"
+                          style={{ fontSize: "0.65rem" }}
+                        >
                           Sincronizado: {jp.updatedAt}
                         </div>
                       ) : (
-                        <div className="text-end small opacity-25 mt-2" style={{ fontSize: "0.65rem" }}>
+                        <div
+                          className="text-end small opacity-25 mt-2"
+                          style={{ fontSize: "0.65rem" }}
+                        >
                           Sin actividad en vivo
                         </div>
                       )}
@@ -774,7 +1019,10 @@ const AdminView = ({ db, onBack, onReset, config }) => {
           </div>
 
           {/* Live Voting Matrix Table */}
-          <div className="card shadow border-0 mt-5 mb-4" style={{ borderRadius: "20px", overflow: "hidden" }}>
+          <div
+            className="card shadow border-0 mt-5 mb-4"
+            style={{ borderRadius: "20px", overflow: "hidden" }}
+          >
             <div className="card-header bg-primary text-white py-3 fw-bold text-center text-uppercase tracking-wider">
               📊 Matriz Comparativa de Votos en Vivo
             </div>
@@ -792,17 +1040,23 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                   {/* Juegos */}
                   {[0, 1, 2].map((idx) => (
                     <tr key={`juego-${idx}`}>
-                      <td className="text-start ps-4 opacity-75">Juego #{idx + 1}</td>
+                      <td className="text-start ps-4 opacity-75">
+                        Juego #{idx + 1}
+                      </td>
                       {jurors.map((j) => {
                         const val = db[j.id]?.juegos?.[idx];
                         return (
                           <td key={j.id}>
                             {val ? (
-                              <span className={`badge ${val === "A" ? "bg-warning text-dark" : "bg-primary"} px-3`}>
+                              <span
+                                className={`badge ${val === "A" ? "bg-warning text-dark" : "bg-primary"} px-3`}
+                              >
                                 {val === "A" ? teamA : teamB}
                               </span>
                             ) : (
-                              <span className="text-muted opacity-50 small">-</span>
+                              <span className="text-muted opacity-50 small">
+                                -
+                              </span>
                             )}
                           </td>
                         );
@@ -812,20 +1066,29 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                   {/* Popurrí */}
                   <tr>
-                    <td className="text-start ps-4 opacity-75">Popurrí Alternativo</td>
+                    <td className="text-start ps-4 opacity-75">
+                      Popurrí Alternativo
+                    </td>
                     {jurors.map((j) => {
                       const arr = db[j.id]?.popurri || [];
-                      const filled = arr.filter(x => x !== null && x !== "").length;
-                      const aCount = arr.filter(x => x === "A").length;
-                      const bCount = arr.filter(x => x === "B").length;
+                      const filled = arr.filter(
+                        (x) => x !== null && x !== "",
+                      ).length;
+                      const aCount = arr.filter((x) => x === "A").length;
+                      const bCount = arr.filter((x) => x === "B").length;
                       return (
                         <td key={j.id}>
                           {filled > 0 ? (
                             <span className="text-white">
-                              {filled}/11 <span className="text-muted small">({teamA}: {aCount} | {teamB}: {bCount})</span>
+                              {filled}/11{" "}
+                              <span className="text-muted small">
+                                ({teamA}: {aCount} | {teamB}: {bCount})
+                              </span>
                             </span>
                           ) : (
-                            <span className="text-muted opacity-50 small">-</span>
+                            <span className="text-muted opacity-50 small">
+                              -
+                            </span>
                           )}
                         </td>
                       );
@@ -834,20 +1097,29 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                   {/* Mascota */}
                   <tr>
-                    <td className="text-start ps-4 opacity-75">Popurrí Mascota</td>
+                    <td className="text-start ps-4 opacity-75">
+                      Popurrí Mascota
+                    </td>
                     {jurors.map((j) => {
                       const arr = db[j.id]?.mascota || [];
-                      const filled = arr.filter(x => x !== null && x !== "").length;
-                      const aCount = arr.filter(x => x === "A").length;
-                      const bCount = arr.filter(x => x === "B").length;
+                      const filled = arr.filter(
+                        (x) => x !== null && x !== "",
+                      ).length;
+                      const aCount = arr.filter((x) => x === "A").length;
+                      const bCount = arr.filter((x) => x === "B").length;
                       return (
                         <td key={j.id}>
                           {filled > 0 ? (
                             <span className="text-white">
-                              {filled}/5 <span className="text-muted small">({teamA}: {aCount} | {teamB}: {bCount})</span>
+                              {filled}/5{" "}
+                              <span className="text-muted small">
+                                ({teamA}: {aCount} | {teamB}: {bCount})
+                              </span>
                             </span>
                           ) : (
-                            <span className="text-muted opacity-50 small">-</span>
+                            <span className="text-muted opacity-50 small">
+                              -
+                            </span>
                           )}
                         </td>
                       );
@@ -856,17 +1128,31 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                   {/* Ritmo 1 A */}
                   <tr>
-                    <td className="text-start ps-4 opacity-75">Ritmo 1: {teamA}</td>
+                    <td className="text-start ps-4 opacity-75">
+                      Ritmo 1: {teamA}
+                    </td>
                     {jurors.map((j) => {
                       const obj = db[j.id]?.ritmo1?.A || {};
-                      const filled = Object.values(obj).filter(x => x !== "").length;
-                      const sum = Object.values(obj).reduce((acc, v) => acc + (Number(v) || 0), 0);
+                      const filled = Object.values(obj).filter(
+                        (x) => x !== "",
+                      ).length;
+                      const sum = Object.values(obj).reduce(
+                        (acc, v) => acc + (Number(v) || 0),
+                        0,
+                      );
                       return (
                         <td key={j.id}>
                           {filled > 0 ? (
-                            <span className="text-warning">{sum} pts <span className="text-muted small">({filled}/5)</span></span>
+                            <span className="text-warning">
+                              {sum} pts{" "}
+                              <span className="text-muted small">
+                                ({filled}/5)
+                              </span>
+                            </span>
                           ) : (
-                            <span className="text-muted opacity-50 small">-</span>
+                            <span className="text-muted opacity-50 small">
+                              -
+                            </span>
                           )}
                         </td>
                       );
@@ -875,17 +1161,31 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                   {/* Ritmo 1 B */}
                   <tr>
-                    <td className="text-start ps-4 opacity-75">Ritmo 1: {teamB}</td>
+                    <td className="text-start ps-4 opacity-75">
+                      Ritmo 1: {teamB}
+                    </td>
                     {jurors.map((j) => {
                       const obj = db[j.id]?.ritmo1?.B || {};
-                      const filled = Object.values(obj).filter(x => x !== "").length;
-                      const sum = Object.values(obj).reduce((acc, v) => acc + (Number(v) || 0), 0);
+                      const filled = Object.values(obj).filter(
+                        (x) => x !== "",
+                      ).length;
+                      const sum = Object.values(obj).reduce(
+                        (acc, v) => acc + (Number(v) || 0),
+                        0,
+                      );
                       return (
                         <td key={j.id}>
                           {filled > 0 ? (
-                            <span className="text-info">{sum} pts <span className="text-muted small">({filled}/5)</span></span>
+                            <span className="text-info">
+                              {sum} pts{" "}
+                              <span className="text-muted small">
+                                ({filled}/5)
+                              </span>
+                            </span>
                           ) : (
-                            <span className="text-muted opacity-50 small">-</span>
+                            <span className="text-muted opacity-50 small">
+                              -
+                            </span>
                           )}
                         </td>
                       );
@@ -894,17 +1194,31 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                   {/* Ritmo 2 A */}
                   <tr>
-                    <td className="text-start ps-4 opacity-75">Ritmo 2: {teamA}</td>
+                    <td className="text-start ps-4 opacity-75">
+                      Ritmo 2: {teamA}
+                    </td>
                     {jurors.map((j) => {
                       const obj = db[j.id]?.ritmo2?.A || {};
-                      const filled = Object.values(obj).filter(x => x !== "").length;
-                      const sum = Object.values(obj).reduce((acc, v) => acc + (Number(v) || 0), 0);
+                      const filled = Object.values(obj).filter(
+                        (x) => x !== "",
+                      ).length;
+                      const sum = Object.values(obj).reduce(
+                        (acc, v) => acc + (Number(v) || 0),
+                        0,
+                      );
                       return (
                         <td key={j.id}>
                           {filled > 0 ? (
-                            <span className="text-warning">{sum} pts <span className="text-muted small">({filled}/5)</span></span>
+                            <span className="text-warning">
+                              {sum} pts{" "}
+                              <span className="text-muted small">
+                                ({filled}/5)
+                              </span>
+                            </span>
                           ) : (
-                            <span className="text-muted opacity-50 small">-</span>
+                            <span className="text-muted opacity-50 small">
+                              -
+                            </span>
                           )}
                         </td>
                       );
@@ -913,17 +1227,31 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                   {/* Ritmo 2 B */}
                   <tr>
-                    <td className="text-start ps-4 opacity-75">Ritmo 2: {teamB}</td>
+                    <td className="text-start ps-4 opacity-75">
+                      Ritmo 2: {teamB}
+                    </td>
                     {jurors.map((j) => {
                       const obj = db[j.id]?.ritmo2?.B || {};
-                      const filled = Object.values(obj).filter(x => x !== "").length;
-                      const sum = Object.values(obj).reduce((acc, v) => acc + (Number(v) || 0), 0);
+                      const filled = Object.values(obj).filter(
+                        (x) => x !== "",
+                      ).length;
+                      const sum = Object.values(obj).reduce(
+                        (acc, v) => acc + (Number(v) || 0),
+                        0,
+                      );
                       return (
                         <td key={j.id}>
                           {filled > 0 ? (
-                            <span className="text-info">{sum} pts <span className="text-muted small">({filled}/5)</span></span>
+                            <span className="text-info">
+                              {sum} pts{" "}
+                              <span className="text-muted small">
+                                ({filled}/5)
+                              </span>
+                            </span>
                           ) : (
-                            <span className="text-muted opacity-50 small">-</span>
+                            <span className="text-muted opacity-50 small">
+                              -
+                            </span>
                           )}
                         </td>
                       );
@@ -932,17 +1260,31 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                   {/* Videoclip A */}
                   <tr>
-                    <td className="text-start ps-4 opacity-75">Videoclip: {teamA}</td>
+                    <td className="text-start ps-4 opacity-75">
+                      Videoclip: {teamA}
+                    </td>
                     {jurors.map((j) => {
                       const obj = db[j.id]?.videoclip?.A || {};
-                      const filled = Object.values(obj).filter(x => x !== "").length;
-                      const sum = Object.values(obj).reduce((acc, v) => acc + (Number(v) || 0), 0);
+                      const filled = Object.values(obj).filter(
+                        (x) => x !== "",
+                      ).length;
+                      const sum = Object.values(obj).reduce(
+                        (acc, v) => acc + (Number(v) || 0),
+                        0,
+                      );
                       return (
                         <td key={j.id}>
                           {filled > 0 ? (
-                            <span className="text-warning">{sum} pts <span className="text-muted small">({filled}/6)</span></span>
+                            <span className="text-warning">
+                              {sum} pts{" "}
+                              <span className="text-muted small">
+                                ({filled}/6)
+                              </span>
+                            </span>
                           ) : (
-                            <span className="text-muted opacity-50 small">-</span>
+                            <span className="text-muted opacity-50 small">
+                              -
+                            </span>
                           )}
                         </td>
                       );
@@ -951,17 +1293,31 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
                   {/* Videoclip B */}
                   <tr>
-                    <td className="text-start ps-4 opacity-75">Videoclip: {teamB}</td>
+                    <td className="text-start ps-4 opacity-75">
+                      Videoclip: {teamB}
+                    </td>
                     {jurors.map((j) => {
                       const obj = db[j.id]?.videoclip?.B || {};
-                      const filled = Object.values(obj).filter(x => x !== "").length;
-                      const sum = Object.values(obj).reduce((acc, v) => acc + (Number(v) || 0), 0);
+                      const filled = Object.values(obj).filter(
+                        (x) => x !== "",
+                      ).length;
+                      const sum = Object.values(obj).reduce(
+                        (acc, v) => acc + (Number(v) || 0),
+                        0,
+                      );
                       return (
                         <td key={j.id}>
                           {filled > 0 ? (
-                            <span className="text-info">{sum} pts <span className="text-muted small">({filled}/6)</span></span>
+                            <span className="text-info">
+                              {sum} pts{" "}
+                              <span className="text-muted small">
+                                ({filled}/6)
+                              </span>
+                            </span>
                           ) : (
-                            <span className="text-muted opacity-50 small">-</span>
+                            <span className="text-muted opacity-50 small">
+                              -
+                            </span>
                           )}
                         </td>
                       );

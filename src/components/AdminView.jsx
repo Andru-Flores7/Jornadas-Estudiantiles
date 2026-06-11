@@ -249,6 +249,78 @@ const AdminView = ({ db, onBack, onReset, config }) => {
     );
   };
 
+  const isCategoryVoted = (category) => {
+    if (!db) return false;
+    
+    if (category.startsWith("juego-")) {
+      const idx = parseInt(category.split("-")[1], 10);
+      return jurors.some(
+        (j) =>
+          db[j.id]?.juegos?.[idx] !== null &&
+          db[j.id]?.juegos?.[idx] !== undefined &&
+          db[j.id]?.juegos?.[idx] !== ""
+      );
+    }
+
+    switch (category) {
+      case "juegos":
+        return jurors.some((j) =>
+          db[j.id]?.juegos?.some(
+            (v) => v !== null && v !== undefined && v !== ""
+          )
+        );
+      case "popurri":
+        return jurors.some((j) =>
+          db[j.id]?.popurri?.some(
+            (v) => v !== null && v !== undefined && v !== ""
+          )
+        );
+      case "mascota":
+        return jurors.some((j) =>
+          db[j.id]?.mascota?.some(
+            (v) => v !== null && v !== undefined && v !== ""
+          )
+        );
+      case "ritmo1":
+        return jurors.some(
+          (j) =>
+            Object.values(db[j.id]?.ritmo1?.A || {}).some(
+              (v) => v !== "" && v !== null && v !== undefined
+            ) ||
+            Object.values(db[j.id]?.ritmo1?.B || {}).some(
+              (v) => v !== "" && v !== null && v !== undefined
+            )
+        );
+      case "ritmo2":
+        return jurors.some(
+          (j) =>
+            Object.values(db[j.id]?.ritmo2?.A || {}).some(
+              (v) => v !== "" && v !== null && v !== undefined
+            ) ||
+            Object.values(db[j.id]?.ritmo2?.B || {}).some(
+              (v) => v !== "" && v !== null && v !== undefined
+            )
+        );
+      case "videoclip":
+        return jurors.some(
+          (j) =>
+            Object.values(db[j.id]?.videoclip?.A || {}).some(
+              (v) => v !== "" && v !== null && v !== undefined
+            ) ||
+            Object.values(db[j.id]?.videoclip?.B || {}).some(
+              (v) => v !== "" && v !== null && v !== undefined
+            )
+        );
+      default:
+        return false;
+    }
+  };
+
+  const anyCategoryVoted = useMemo(() => {
+    return showRes && ["juegos", "popurri", "mascota", "ritmo1", "ritmo2", "videoclip"].some(key => isCategoryVoted(key));
+  }, [showRes, db, jurors]);
+
+
   return (
     <div className="container py-5">
       <div className="d-flex justify-content-between mb-4">
@@ -369,56 +441,67 @@ const AdminView = ({ db, onBack, onReset, config }) => {
           {/* Visual Cards Grid - Vertical List */}
           <div className="row justify-content-center mb-5">
             <div className="col-lg-6 col-md-8">
-              {(rData?.breakdown?.individualGames || []).map((win, i) => (
-                <div className="mb-4" key={`card-juego-${i}`}>
-                  <CategoryWinnerCard
-                    label={`Juego #${i + 1}`}
-                    a={showRes ? (win === "A" ? 6 : 0) : 0}
-                    b={showRes ? (win === "B" ? 6 : 0) : 0}
-                    teamA={teamA}
-                    teamB={teamB}
-                    hasData={showRes}
-                  />
-                </div>
-              ))}
+              {(rData?.breakdown?.individualGames || []).map((win, i) => {
+                const gameVoted = showRes && isCategoryVoted(`juego-${i}`);
+                return (
+                  <div className="mb-4" key={`card-juego-${i}`}>
+                    <CategoryWinnerCard
+                      label={`Juego #${i + 1}`}
+                      a={gameVoted ? (win === "A" ? 6 : 0) : 0}
+                      b={gameVoted ? (win === "B" ? 6 : 0) : 0}
+                      teamA={teamA}
+                      teamB={teamB}
+                      hasData={gameVoted}
+                    />
+                  </div>
+                );
+              })}
               {[
                 {
                   label: "Popurrí Alternativo",
+                  key: "popurri",
                   a: rData?.breakdown?.popA,
                   b: rData?.breakdown?.popB,
                 },
                 {
                   label: "Popurrí Mascota",
+                  key: "mascota",
                   a: rData?.breakdown?.masA,
                   b: rData?.breakdown?.masB,
                 },
                 {
                   label: "Popurrí Seleccionado Ritmo 1",
+                  key: "ritmo1",
                   a: rData?.breakdown?.r1A,
                   b: rData?.breakdown?.r1B,
                 },
                 {
                   label: "Popurrí Seleccionado Ritmo 2",
+                  key: "ritmo2",
                   a: rData?.breakdown?.r2A,
                   b: rData?.breakdown?.r2B,
                 },
                 {
                   label: "Video Clip",
+                  key: "videoclip",
                   a: rData?.breakdown?.vidA,
                   b: rData?.breakdown?.vidB,
                 },
-              ].map((cat, i) => (
-                <div className="mb-4" key={`card-cat-${i}`}>
-                  <CategoryWinnerCard
-                    label={cat.label}
-                    a={showRes ? cat.a || 0 : 0}
-                    b={showRes ? cat.b || 0 : 0}
-                    teamA={teamA}
-                    teamB={teamB}
-                    hasData={showRes}
-                  />
-                </div>
-              ))}
+              ].map((cat, i) => {
+                const catVoted = showRes && isCategoryVoted(cat.key);
+                return (
+                  <div className="mb-4" key={`card-cat-${i}`}>
+                    <CategoryWinnerCard
+                      label={cat.label}
+                      a={catVoted ? cat.a || 0 : 0}
+                      b={catVoted ? cat.b || 0 : 0}
+                      teamA={teamA}
+                      teamB={teamB}
+                      hasData={catVoted}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -445,36 +528,43 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       {[
                         {
                           label: "Juegos",
+                          key: "juegos",
                           a: rData?.breakdown?.juegosA,
                           b: rData?.breakdown?.juegosB,
                         },
                         {
                           label: "Ganador Popurrí Alternativo",
+                          key: "popurri",
                           a: rData?.breakdown?.popA,
                           b: rData?.breakdown?.popB,
                         },
                         {
                           label: "Ganador Popurrí Mascota",
+                          key: "mascota",
                           a: rData?.breakdown?.masA,
                           b: rData?.breakdown?.masB,
                         },
                         {
                           label: "Ganador Popurrí Selec. Ritmo 1",
+                          key: "ritmo1",
                           a: rData?.breakdown?.r1A,
                           b: rData?.breakdown?.r1B,
                         },
                         {
                           label: "Ganador Popurrí Selec. Ritmo 2",
+                          key: "ritmo2",
                           a: rData?.breakdown?.r2A,
                           b: rData?.breakdown?.r2B,
                         },
                         {
                           label: "Ganador Video Clip",
+                          key: "videoclip",
                           a: rData?.breakdown?.vidA,
                           b: rData?.breakdown?.vidB,
                         },
                       ].map((row, i) => {
-                        const rowWinner = !showRes
+                        const voted = showRes && isCategoryVoted(row.key);
+                        const rowWinner = !voted
                           ? "PENDIENTE"
                           : row.a === row.b
                             ? "EMPATE"
@@ -487,10 +577,10 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                               {row.label}
                             </td>
                             <td style={{ color: "#ffb74d" }}>
-                              {showRes ? row.a : "-"}
+                              {voted ? row.a : "-"}
                             </td>
                             <td style={{ color: "#ffb74d" }}>
-                              {showRes ? row.b : "-"}
+                              {voted ? row.b : "-"}
                             </td>
                             <td>
                               <span
@@ -513,15 +603,15 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       <tr>
                         <td className="text-start ps-4">RESULTADO PARCIAL</td>
                         <td className="h4 m-0" style={{ color: "#ff9800" }}>
-                          {showRes ? rData?.totalA : "-"}
+                          {anyCategoryVoted ? rData?.totalA : "-"}
                         </td>
                         <td className="h4 m-0" style={{ color: "#ff9800" }}>
-                          {showRes ? rData?.totalB : "-"}
+                          {anyCategoryVoted ? rData?.totalB : "-"}
                         </td>
                         <td
-                          className={`fw-bold ${showRes && rData?.totalA === rData?.totalB ? "text-warning" : "text-info"}`}
+                          className={`fw-bold ${anyCategoryVoted && rData?.totalA === rData?.totalB ? "text-warning" : "text-info"}`}
                         >
-                          {!showRes
+                          {!anyCategoryVoted
                             ? "PENDIENTE"
                             : rData?.totalA === rData?.totalB
                               ? "EMPATE"
@@ -611,14 +701,14 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             <div className="row justify-content-center align-items-center">
               <div className="col-md-5">
                 <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
-                  {showRes ? rData?.totalA : "-"}
+                  {anyCategoryVoted ? rData?.totalA : "-"}
                 </div>
                 <h4 className="text-uppercase">{teamA}</h4>
               </div>
               <div className="col-md-2 display-4 opacity-25">VS</div>
               <div className="col-md-5">
                 <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
-                  {showRes ? rData?.totalB : "-"}
+                  {anyCategoryVoted ? rData?.totalB : "-"}
                 </div>
                 <h4 className="text-uppercase">{teamB}</h4>
               </div>
@@ -626,7 +716,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             <div className="mt-5">
               <div className="winner-badge shadow-lg">
                 <h2 className="m-0 fw-bolder text-uppercase tracking-tighter">
-                  {!allVoted && !persistedResults
+                  {!anyCategoryVoted
                     ? "⏳ ESPERANDO JURADOS..."
                     : rData?.totalA === rData?.totalB
                       ? "⚖️ EMPATE"

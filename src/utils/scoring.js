@@ -45,6 +45,7 @@ export const createInitialJurorState = () => ({
       "uso del espacio": "",
       "trabajo en equipo": "",
       carisma: "",
+      escenografia: "",
     },
     B: {
       "cordinacion coreografica": "",
@@ -53,6 +54,7 @@ export const createInitialJurorState = () => ({
       "uso del espacio": "",
       "trabajo en equipo": "",
       carisma: "",
+      escenografia: "",
     },
   },
 });
@@ -256,9 +258,9 @@ export const calculateJurorProgress = (data) => {
       mascota: { filled: 0, total: 5 },
       ritmo1: { filled: 0, total: 10 },
       ritmo2: { filled: 0, total: 10 },
-      videoclip: { filled: 0, total: 12 },
+      videoclip: { filled: 0, total: 14 },
       totalFilled: 0,
-      totalItems: 51,
+      totalItems: 53,
       pct: 0,
     };
   }
@@ -280,7 +282,7 @@ export const calculateJurorProgress = (data) => {
     : 0;
 
   const totalFilled = juegosFilled + popurriFilled + mascotaFilled + ritmo1Filled + ritmo2Filled + videoclipFilled;
-  const totalItems = 51;
+  const totalItems = 53;
   const pct = Math.round((totalFilled / totalItems) * 100);
 
   return {
@@ -291,7 +293,7 @@ export const calculateJurorProgress = (data) => {
     mascota: { filled: mascotaFilled, total: 5 },
     ritmo1: { filled: ritmo1Filled, total: 10 },
     ritmo2: { filled: ritmo2Filled, total: 10 },
-    videoclip: { filled: videoclipFilled, total: 12 },
+    videoclip: { filled: videoclipFilled, total: 14 },
     totalFilled,
     totalItems,
     pct,

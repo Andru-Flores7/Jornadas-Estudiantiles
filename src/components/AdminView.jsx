@@ -902,7 +902,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                             Video Clip
                           </div>
                           <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2">
-                            {jp.progress.videoclip.filled} / 12 campos
+                            {jp.progress.videoclip.filled} / 14 campos
                           </div>
                         </div>
                       </div>
@@ -1402,7 +1402,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                             <span className="text-warning">
                               {sum} pts{" "}
                               <span className="text-muted small">
-                                ({filled}/6)
+                                ({filled}/7)
                               </span>
                             </span>
                           ) : (
@@ -1435,7 +1435,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                             <span className="text-info">
                               {sum} pts{" "}
                               <span className="text-muted small">
-                                ({filled}/6)
+                                ({filled}/7)
                               </span>
                             </span>
                           ) : (

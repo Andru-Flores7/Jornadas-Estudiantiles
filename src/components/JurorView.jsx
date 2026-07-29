@@ -360,6 +360,7 @@ const JurorView = ({
                           { k: "uso del espacio", l: "Uso del espacio" },
                           { k: "trabajo en equipo", l: "Trabajo en equipo" },
                           { k: "carisma", l: "Carisma" },
+                          { k: "escenografia", l: "Escenografía" },
                         ].map((c) => (
                           <tr key={c.k}>
                             <td className="text-start small">{c.l}</td>

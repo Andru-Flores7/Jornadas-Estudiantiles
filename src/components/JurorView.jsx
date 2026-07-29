@@ -250,9 +250,9 @@ const JurorView = ({
             </div>
           </div>
         </section>
-        {/* RITMOS (DOS TABLAS) */}
-        {["ritmo1", "ritmo2"].map((rit, idx) => (
-          <section className="col-lg-6" key={rit}>
+        {/* RITMOS (TRES TABLAS) */}
+        {["ritmo1", "ritmo2", "ritmo3"].map((rit, idx) => (
+          <section className="col-lg-4 col-md-6" key={rit}>
             <div className="card shadow-sm border-0">
               <div className="card-header text-white fw-bold">
                 POPURRÍ SELECCIONADO <em>RITMO {idx + 1}</em> (SE CALIFICA DEL 1
@@ -316,10 +316,14 @@ const JurorView = ({
                               {team === "A"
                                 ? idx === 0
                                   ? calc.prizeR1A
-                                  : calc.prizeR2A
+                                  : idx === 1
+                                    ? calc.prizeR2A
+                                    : calc.prizeR3A
                                 : idx === 0
                                   ? calc.prizeR1B
-                                  : calc.prizeR2B}
+                                  : idx === 1
+                                    ? calc.prizeR2B
+                                    : calc.prizeR3B}
                             </td>
                           </tr>
                         </tbody>

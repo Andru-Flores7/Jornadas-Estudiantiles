@@ -301,6 +301,16 @@ const AdminView = ({ db, onBack, onReset, config }) => {
               (v) => v !== "" && v !== null && v !== undefined
             )
         );
+      case "ritmo3":
+        return jurors.some(
+          (j) =>
+            Object.values(db[j.id]?.ritmo3?.A || {}).some(
+              (v) => v !== "" && v !== null && v !== undefined
+            ) ||
+            Object.values(db[j.id]?.ritmo3?.B || {}).some(
+              (v) => v !== "" && v !== null && v !== undefined
+            )
+        );
       case "videoclip":
         return jurors.some(
           (j) =>
@@ -313,11 +323,11 @@ const AdminView = ({ db, onBack, onReset, config }) => {
         );
       default:
         return false;
-    }
-  };
+      }
+    };
 
   const anyCategoryVoted = useMemo(() => {
-    return showRes && ["juegos", "popurri", "mascota", "ritmo1", "ritmo2", "videoclip"].some(key => isCategoryVoted(key));
+    return showRes && ["juegos", "popurri", "mascota", "ritmo1", "ritmo2", "ritmo3", "videoclip"].some(key => isCategoryVoted(key));
   }, [showRes, db, jurors]);
 
 
@@ -482,6 +492,12 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                   b: rData?.breakdown?.r2B,
                 },
                 {
+                  label: "Popurrí Seleccionado Ritmo 3",
+                  key: "ritmo3",
+                  a: rData?.breakdown?.r3A,
+                  b: rData?.breakdown?.r3B,
+                },
+                {
                   label: "Video Clip",
                   key: "videoclip",
                   a: rData?.breakdown?.vidA,
@@ -555,6 +571,12 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                           key: "ritmo2",
                           a: rData?.breakdown?.r2A,
                           b: rData?.breakdown?.r2B,
+                        },
+                        {
+                          label: "Ganador Popurrí Selec. Ritmo 3",
+                          key: "ritmo3",
+                          a: rData?.breakdown?.r3A,
+                          b: rData?.breakdown?.r3B,
                         },
                         {
                           label: "Ganador Video Clip",
@@ -867,28 +889,39 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                           {renderDots(dataObj?.mascota, 5)}
                         </div>
 
-                        {/* Ritmo 1 y 2 */}
+                        {/* Ritmo 1, 2 y 3 */}
                         <div className="row g-2">
-                          <div className="col-6">
+                          <div className="col-4">
                             <div
                               className="small opacity-75 fw-bold"
-                              style={{ fontSize: "0.75rem" }}
+                              style={{ fontSize: "0.72rem" }}
                             >
                               Ritmo 1
                             </div>
-                            <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2">
+                            <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2 px-1">
                               {jp.progress.ritmo1.filled} / 10
                             </div>
                           </div>
-                          <div className="col-6">
+                          <div className="col-4">
                             <div
                               className="small opacity-75 fw-bold"
-                              style={{ fontSize: "0.75rem" }}
+                              style={{ fontSize: "0.72rem" }}
                             >
                               Ritmo 2
                             </div>
-                            <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2">
+                            <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2 px-1">
                               {jp.progress.ritmo2.filled} / 10
+                            </div>
+                          </div>
+                          <div className="col-4">
+                            <div
+                              className="small opacity-75 fw-bold"
+                              style={{ fontSize: "0.72rem" }}
+                            >
+                              Ritmo 3
+                            </div>
+                            <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2 px-1">
+                              {jp.progress.ritmo3.filled} / 10
                             </div>
                           </div>
                         </div>
@@ -985,6 +1018,32 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                                     className="text-muted fw-bold mb-1"
                                     style={{ fontSize: "0.65rem" }}
                                   >
+                                    Ritmo 3:
+                                  </div>
+                                  {Object.entries(dataObj?.ritmo3?.A || {}).map(
+                                    ([k, v]) => (
+                                      <div
+                                        key={k}
+                                        className="d-flex justify-content-between pe-2 lh-sm my-1"
+                                      >
+                                        <span
+                                          className="opacity-75 text-capitalize"
+                                          style={{ fontSize: "0.65rem" }}
+                                        >
+                                          {k}:
+                                        </span>
+                                        <span className="fw-bold">
+                                          {v || "-"}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                                <div>
+                                  <div
+                                    className="text-muted fw-bold mb-1"
+                                    style={{ fontSize: "0.65rem" }}
+                                  >
                                     Video Clip:
                                   </div>
                                   {Object.entries(
@@ -1053,6 +1112,32 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                                     Ritmo 2:
                                   </div>
                                   {Object.entries(dataObj?.ritmo2?.B || {}).map(
+                                    ([k, v]) => (
+                                      <div
+                                        key={k}
+                                        className="d-flex justify-content-between lh-sm my-1"
+                                      >
+                                        <span
+                                          className="opacity-75 text-capitalize"
+                                          style={{ fontSize: "0.65rem" }}
+                                        >
+                                          {k}:
+                                        </span>
+                                        <span className="fw-bold">
+                                          {v || "-"}
+                                        </span>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                                <div>
+                                  <div
+                                    className="text-muted fw-bold mb-1"
+                                    style={{ fontSize: "0.65rem" }}
+                                  >
+                                    Ritmo 3:
+                                  </div>
+                                  {Object.entries(dataObj?.ritmo3?.B || {}).map(
                                     ([k, v]) => (
                                       <div
                                         key={k}
@@ -1356,6 +1441,72 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                     </td>
                     {jurors.map((j) => {
                       const obj = db[j.id]?.ritmo2?.B || {};
+                      const filled = Object.values(obj).filter(
+                        (x) => x !== "",
+                      ).length;
+                      const sum = Object.values(obj).reduce(
+                        (acc, v) => acc + (Number(v) || 0),
+                        0,
+                      );
+                      return (
+                        <td key={j.id}>
+                          {filled > 0 ? (
+                            <span className="text-info">
+                              {sum} pts{" "}
+                              <span className="text-muted small">
+                                ({filled}/5)
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-muted opacity-50 small">
+                              -
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+
+                  {/* Ritmo 3 A */}
+                  <tr>
+                    <td className="text-start ps-4 opacity-75">
+                      Ritmo 3: {teamA}
+                    </td>
+                    {jurors.map((j) => {
+                      const obj = db[j.id]?.ritmo3?.A || {};
+                      const filled = Object.values(obj).filter(
+                        (x) => x !== "",
+                      ).length;
+                      const sum = Object.values(obj).reduce(
+                        (acc, v) => acc + (Number(v) || 0),
+                        0,
+                      );
+                      return (
+                        <td key={j.id}>
+                          {filled > 0 ? (
+                            <span className="text-warning">
+                              {sum} pts{" "}
+                              <span className="text-muted small">
+                                ({filled}/5)
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-muted opacity-50 small">
+                              -
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+
+                  {/* Ritmo 3 B */}
+                  <tr>
+                    <td className="text-start ps-4 opacity-75">
+                      Ritmo 3: {teamB}
+                    </td>
+                    {jurors.map((j) => {
+                      const obj = db[j.id]?.ritmo3?.B || {};
                       const filled = Object.values(obj).filter(
                         (x) => x !== "",
                       ).length;

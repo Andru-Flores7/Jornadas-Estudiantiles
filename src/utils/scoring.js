@@ -37,6 +37,22 @@ export const createInitialJurorState = () => ({
       "conexion en pareja": "",
     },
   },
+  ritmo3: {
+    A: {
+      vestimenta: "",
+      originalidad: "",
+      desplazamiento: "",
+      coordinacion: "",
+      "conexion en pareja": "",
+    },
+    B: {
+      vestimenta: "",
+      originalidad: "",
+      desplazamiento: "",
+      coordinacion: "",
+      "conexion en pareja": "",
+    },
+  },
   videoclip: {
     A: {
       "cordinacion coreografica": "",
@@ -130,6 +146,17 @@ export const calculateFinal = (data) => {
   const prizeR2A = sumR2A > sumR2B && sumR2A > 0 ? 4 : 0;
   const prizeR2B = sumR2B > sumR2A && sumR2B > 0 ? 4 : 0;
 
+  const sumR3A = Object.values(data.ritmo3.A).reduce(
+    (acc, v) => acc + (Number(v) || 0),
+    0,
+  );
+  const sumR3B = Object.values(data.ritmo3.B).reduce(
+    (acc, v) => acc + (Number(v) || 0),
+    0,
+  );
+  const prizeR3A = sumR3A > sumR3B && sumR3A > 0 ? 4 : 0;
+  const prizeR3B = sumR3B > sumR3A && sumR3B > 0 ? 4 : 0;
+
   const sumVidA = Object.values(data.videoclip.A).reduce(
     (acc, v) => acc + (Number(v) || 0),
     0,
@@ -152,14 +179,16 @@ export const calculateFinal = (data) => {
     prizeR1B,
     prizeR2A,
     prizeR2B,
+    prizeR3A,
+    prizeR3B,
     sumVidA,
     sumVidB,
     prizeVidA,
     prizeVidB,
     totalA:
-      ptsJuegosA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeVidA,
+      ptsJuegosA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeR3A + prizeVidA,
     totalB:
-      ptsJuegosB + prizePopB + prizeMasB + prizeR1B + prizeR2B + prizeVidB,
+      ptsJuegosB + prizePopB + prizeMasB + prizeR1B + prizeR2B + prizeR3B + prizeVidB,
   };
 };
 
@@ -183,6 +212,8 @@ export const calculateConsensus = (db, jurors) => {
         r1B: 0,
         r2A: 0,
         r2B: 0,
+        r3A: 0,
+        r3B: 0,
         vidA: 0,
         vidB: 0,
       },
@@ -223,6 +254,7 @@ export const calculateConsensus = (db, jurors) => {
   const mas = getConsensusPrize("prizeMasA", "prizeMasB", 3);
   const r1 = getConsensusPrize("prizeR1A", "prizeR1B", 4);
   const r2 = getConsensusPrize("prizeR2A", "prizeR2B", 4);
+  const r3 = getConsensusPrize("prizeR3A", "prizeR3B", 4);
   const vidPrize = getConsensusPrize("prizeVidA", "prizeVidB", 15);
 
   const breakdown = {
@@ -237,13 +269,15 @@ export const calculateConsensus = (db, jurors) => {
     r1B: r1.b,
     r2A: r2.a,
     r2B: r2.b,
+    r3A: r3.a,
+    r3B: r3.b,
     vidA: vidPrize.a,
     vidB: vidPrize.b,
   };
 
   return {
-    totalA: juegosA + pop.a + mas.a + r1.a + r2.a + breakdown.vidA,
-    totalB: juegosB + pop.b + mas.b + r1.b + r2.b + breakdown.vidB,
+    totalA: juegosA + pop.a + mas.a + r1.a + r2.a + r3.a + breakdown.vidA,
+    totalB: juegosB + pop.b + mas.b + r1.b + r2.b + r3.b + breakdown.vidB,
     breakdown,
   };
 };
@@ -258,9 +292,10 @@ export const calculateJurorProgress = (data) => {
       mascota: { filled: 0, total: 5 },
       ritmo1: { filled: 0, total: 10 },
       ritmo2: { filled: 0, total: 10 },
+      ritmo3: { filled: 0, total: 10 },
       videoclip: { filled: 0, total: 14 },
       totalFilled: 0,
-      totalItems: 53,
+      totalItems: 63,
       pct: 0,
     };
   }
@@ -277,12 +312,16 @@ export const calculateJurorProgress = (data) => {
     ? (Object.values(data.ritmo2.A || {}).filter(x => x !== "").length + Object.values(data.ritmo2.B || {}).filter(x => x !== "").length)
     : 0;
 
+  const ritmo3Filled = data.ritmo3
+    ? (Object.values(data.ritmo3.A || {}).filter(x => x !== "").length + Object.values(data.ritmo3.B || {}).filter(x => x !== "").length)
+    : 0;
+
   const videoclipFilled = data.videoclip
     ? (Object.values(data.videoclip.A || {}).filter(x => x !== "").length + Object.values(data.videoclip.B || {}).filter(x => x !== "").length)
     : 0;
 
-  const totalFilled = juegosFilled + popurriFilled + mascotaFilled + ritmo1Filled + ritmo2Filled + videoclipFilled;
-  const totalItems = 53;
+  const totalFilled = juegosFilled + popurriFilled + mascotaFilled + ritmo1Filled + ritmo2Filled + ritmo3Filled + videoclipFilled;
+  const totalItems = 63;
   const pct = Math.round((totalFilled / totalItems) * 100);
 
   return {
@@ -293,6 +332,7 @@ export const calculateJurorProgress = (data) => {
     mascota: { filled: mascotaFilled, total: 5 },
     ritmo1: { filled: ritmo1Filled, total: 10 },
     ritmo2: { filled: ritmo2Filled, total: 10 },
+    ritmo3: { filled: ritmo3Filled, total: 10 },
     videoclip: { filled: videoclipFilled, total: 14 },
     totalFilled,
     totalItems,

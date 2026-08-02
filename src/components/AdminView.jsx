@@ -7,6 +7,7 @@ import {
   calculateConsensus,
   calculateFinal,
   calculateJurorProgress,
+  isCategoryFullyVoted,
 } from "../utils/scoring";
 import CategoryWinnerCard from "./CategoryWinnerCard";
 
@@ -93,6 +94,10 @@ const AdminView = ({ db, onBack, onReset, config }) => {
   const rData = allVoted
     ? { totalA, totalB, breakdown, jurorResults }
     : persistedResults;
+
+  const currentData = showRes
+    ? rData
+    : { totalA, totalB, breakdown };
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
@@ -249,86 +254,9 @@ const AdminView = ({ db, onBack, onReset, config }) => {
     );
   };
 
-  const isCategoryVoted = (category) => {
-    if (!db) return false;
-    
-    if (category.startsWith("juego-")) {
-      const idx = parseInt(category.split("-")[1], 10);
-      return jurors.some(
-        (j) =>
-          db[j.id]?.juegos?.[idx] !== null &&
-          db[j.id]?.juegos?.[idx] !== undefined &&
-          db[j.id]?.juegos?.[idx] !== ""
-      );
-    }
-
-    switch (category) {
-      case "juegos":
-        return jurors.some((j) =>
-          db[j.id]?.juegos?.some(
-            (v) => v !== null && v !== undefined && v !== ""
-          )
-        );
-      case "popurri":
-        return jurors.some((j) =>
-          db[j.id]?.popurri?.some(
-            (v) => v !== null && v !== undefined && v !== ""
-          )
-        );
-      case "mascota":
-        return jurors.some((j) =>
-          db[j.id]?.mascota?.some(
-            (v) => v !== null && v !== undefined && v !== ""
-          )
-        );
-      case "ritmo1":
-        return jurors.some(
-          (j) =>
-            Object.values(db[j.id]?.ritmo1?.A || {}).some(
-              (v) => v !== "" && v !== null && v !== undefined
-            ) ||
-            Object.values(db[j.id]?.ritmo1?.B || {}).some(
-              (v) => v !== "" && v !== null && v !== undefined
-            )
-        );
-      case "ritmo2":
-        return jurors.some(
-          (j) =>
-            Object.values(db[j.id]?.ritmo2?.A || {}).some(
-              (v) => v !== "" && v !== null && v !== undefined
-            ) ||
-            Object.values(db[j.id]?.ritmo2?.B || {}).some(
-              (v) => v !== "" && v !== null && v !== undefined
-            )
-        );
-      case "ritmo3":
-        return jurors.some(
-          (j) =>
-            Object.values(db[j.id]?.ritmo3?.A || {}).some(
-              (v) => v !== "" && v !== null && v !== undefined
-            ) ||
-            Object.values(db[j.id]?.ritmo3?.B || {}).some(
-              (v) => v !== "" && v !== null && v !== undefined
-            )
-        );
-      case "videoclip":
-        return jurors.some(
-          (j) =>
-            Object.values(db[j.id]?.videoclip?.A || {}).some(
-              (v) => v !== "" && v !== null && v !== undefined
-            ) ||
-            Object.values(db[j.id]?.videoclip?.B || {}).some(
-              (v) => v !== "" && v !== null && v !== undefined
-            )
-        );
-      default:
-        return false;
-      }
-    };
-
-  const anyCategoryVoted = useMemo(() => {
-    return showRes && ["juegos", "popurri", "mascota", "ritmo1", "ritmo2", "ritmo3", "videoclip"].some(key => isCategoryVoted(key));
-  }, [showRes, db, jurors]);
+  const anyCategoryFullyVoted = useMemo(() => {
+    return ["juegos", "popurri", "mascota", "ritmo1", "ritmo2", "ritmo3", "videoclip"].some(key => isCategoryFullyVoted(db, jurors, key));
+  }, [db, jurors]);
 
 
   return (
@@ -451,8 +379,8 @@ const AdminView = ({ db, onBack, onReset, config }) => {
           {/* Visual Cards Grid - Vertical List */}
           <div className="row justify-content-center mb-5">
             <div className="col-lg-6 col-md-8">
-              {(rData?.breakdown?.individualGames || []).map((win, i) => {
-                const gameVoted = showRes && isCategoryVoted(`juego-${i}`);
+              {(currentData?.breakdown?.individualGames || []).map((win, i) => {
+                const gameVoted = isCategoryFullyVoted(db, jurors, `juego-${i}`);
                 return (
                   <div className="mb-4" key={`card-juego-${i}`}>
                     <CategoryWinnerCard
@@ -470,41 +398,41 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                 {
                   label: "Popurrí Alternativo",
                   key: "popurri",
-                  a: rData?.breakdown?.popA,
-                  b: rData?.breakdown?.popB,
+                  a: currentData?.breakdown?.popA,
+                  b: currentData?.breakdown?.popB,
                 },
                 {
                   label: "Popurrí Mascota",
                   key: "mascota",
-                  a: rData?.breakdown?.masA,
-                  b: rData?.breakdown?.masB,
+                  a: currentData?.breakdown?.masA,
+                  b: currentData?.breakdown?.masB,
                 },
                 {
                   label: "Popurrí Seleccionado Ritmo 1",
                   key: "ritmo1",
-                  a: rData?.breakdown?.r1A,
-                  b: rData?.breakdown?.r1B,
+                  a: currentData?.breakdown?.r1A,
+                  b: currentData?.breakdown?.r1B,
                 },
                 {
                   label: "Popurrí Seleccionado Ritmo 2",
                   key: "ritmo2",
-                  a: rData?.breakdown?.r2A,
-                  b: rData?.breakdown?.r2B,
+                  a: currentData?.breakdown?.r2A,
+                  b: currentData?.breakdown?.r2B,
                 },
                 {
                   label: "Popurrí Seleccionado Ritmo 3",
                   key: "ritmo3",
-                  a: rData?.breakdown?.r3A,
-                  b: rData?.breakdown?.r3B,
+                  a: currentData?.breakdown?.r3A,
+                  b: currentData?.breakdown?.r3B,
                 },
                 {
                   label: "Video Clip",
                   key: "videoclip",
-                  a: rData?.breakdown?.vidA,
-                  b: rData?.breakdown?.vidB,
+                  a: currentData?.breakdown?.vidA,
+                  b: currentData?.breakdown?.vidB,
                 },
               ].map((cat, i) => {
-                const catVoted = showRes && isCategoryVoted(cat.key);
+                const catVoted = isCategoryFullyVoted(db, jurors, cat.key);
                 return (
                   <div className="mb-4" key={`card-cat-${i}`}>
                     <CategoryWinnerCard
@@ -545,47 +473,47 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                         {
                           label: "Juegos",
                           key: "juegos",
-                          a: rData?.breakdown?.juegosA,
-                          b: rData?.breakdown?.juegosB,
+                          a: currentData?.breakdown?.juegosA,
+                          b: currentData?.breakdown?.juegosB,
                         },
                         {
                           label: "Ganador Popurrí Alternativo",
                           key: "popurri",
-                          a: rData?.breakdown?.popA,
-                          b: rData?.breakdown?.popB,
+                          a: currentData?.breakdown?.popA,
+                          b: currentData?.breakdown?.popB,
                         },
                         {
                           label: "Ganador Popurrí Mascota",
                           key: "mascota",
-                          a: rData?.breakdown?.masA,
-                          b: rData?.breakdown?.masB,
+                          a: currentData?.breakdown?.masA,
+                          b: currentData?.breakdown?.masB,
                         },
                         {
                           label: "Ganador Popurrí Selec. Ritmo 1",
                           key: "ritmo1",
-                          a: rData?.breakdown?.r1A,
-                          b: rData?.breakdown?.r1B,
+                          a: currentData?.breakdown?.r1A,
+                          b: currentData?.breakdown?.r1B,
                         },
                         {
                           label: "Ganador Popurrí Selec. Ritmo 2",
                           key: "ritmo2",
-                          a: rData?.breakdown?.r2A,
-                          b: rData?.breakdown?.r2B,
+                          a: currentData?.breakdown?.r2A,
+                          b: currentData?.breakdown?.r2B,
                         },
                         {
                           label: "Ganador Popurrí Selec. Ritmo 3",
                           key: "ritmo3",
-                          a: rData?.breakdown?.r3A,
-                          b: rData?.breakdown?.r3B,
+                          a: currentData?.breakdown?.r3A,
+                          b: currentData?.breakdown?.r3B,
                         },
                         {
                           label: "Ganador Video Clip",
                           key: "videoclip",
-                          a: rData?.breakdown?.vidA,
-                          b: rData?.breakdown?.vidB,
+                          a: currentData?.breakdown?.vidA,
+                          b: currentData?.breakdown?.vidB,
                         },
                       ].map((row, i) => {
-                        const voted = showRes && isCategoryVoted(row.key);
+                        const voted = isCategoryFullyVoted(db, jurors, row.key);
                         const rowWinner = !voted
                           ? "PENDIENTE"
                           : row.a === row.b
@@ -625,19 +553,19 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       <tr>
                         <td className="text-start ps-4">RESULTADO PARCIAL</td>
                         <td className="h4 m-0" style={{ color: "#ff9800" }}>
-                          {anyCategoryVoted ? rData?.totalA : "-"}
+                          {anyCategoryFullyVoted ? currentData?.totalA : "-"}
                         </td>
                         <td className="h4 m-0" style={{ color: "#ff9800" }}>
-                          {anyCategoryVoted ? rData?.totalB : "-"}
+                          {anyCategoryFullyVoted ? currentData?.totalB : "-"}
                         </td>
                         <td
-                          className={`fw-bold ${anyCategoryVoted && rData?.totalA === rData?.totalB ? "text-warning" : "text-info"}`}
+                          className={`fw-bold ${anyCategoryFullyVoted && currentData?.totalA === currentData?.totalB ? "text-warning" : "text-info"}`}
                         >
-                          {!anyCategoryVoted
+                          {!anyCategoryFullyVoted
                             ? "PENDIENTE"
-                            : rData?.totalA === rData?.totalB
+                            : currentData?.totalA === currentData?.totalB
                               ? "EMPATE"
-                              : rData?.totalA > rData?.totalB
+                              : currentData?.totalA > currentData?.totalB
                                 ? teamA
                                 : teamB}
                         </td>
@@ -723,14 +651,14 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             <div className="row justify-content-center align-items-center">
               <div className="col-md-5">
                 <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
-                  {anyCategoryVoted ? rData?.totalA : "-"}
+                  {anyCategoryFullyVoted ? currentData?.totalA : "-"}
                 </div>
                 <h4 className="text-uppercase">{teamA}</h4>
               </div>
               <div className="col-md-2 display-4 opacity-25">VS</div>
               <div className="col-md-5">
                 <div className="display-1 fw-bold" style={{ color: "#ff9800" }}>
-                  {anyCategoryVoted ? rData?.totalB : "-"}
+                  {anyCategoryFullyVoted ? currentData?.totalB : "-"}
                 </div>
                 <h4 className="text-uppercase">{teamB}</h4>
               </div>
@@ -738,11 +666,11 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             <div className="mt-5">
               <div className="winner-badge shadow-lg">
                 <h2 className="m-0 fw-bolder text-uppercase tracking-tighter">
-                  {!anyCategoryVoted
+                  {!anyCategoryFullyVoted
                     ? "⏳ ESPERANDO JURADOS..."
-                    : rData?.totalA === rData?.totalB
+                    : currentData?.totalA === currentData?.totalB
                       ? "⚖️ EMPATE"
-                      : `🏆 GANADOR: ${rData?.totalA > rData?.totalB ? teamA : teamB}`}
+                      : `🏆 GANADOR: ${currentData?.totalA > currentData?.totalB ? teamA : teamB}`}
                 </h2>
               </div>
             </div>

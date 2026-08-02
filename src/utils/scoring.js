@@ -192,70 +192,132 @@ export const calculateFinal = (data) => {
   };
 };
 
-export const calculateConsensus = (db, jurors) => {
-  const submittedIds = jurors
-    .filter((j) => db[j.id]?.submitted)
-    .map((j) => j.id);
-  if (submittedIds.length === 0)
-    return {
-      totalA: 0,
-      totalB: 0,
-      breakdown: {
-        juegosA: 0,
-        juegosB: 0,
-        individualGames: [null, null, null],
-        popA: 0,
-        popB: 0,
-        masA: 0,
-        masB: 0,
-        r1A: 0,
-        r1B: 0,
-        r2A: 0,
-        r2B: 0,
-        r3A: 0,
-        r3B: 0,
-        vidA: 0,
-        vidB: 0,
-      },
-    };
+export const isCategoryFullyVoted = (db, jurors, category) => {
+  if (!db) return false;
 
-  const individualResults = submittedIds.map((id) => calculateFinal(db[id]));
+  if (category.startsWith("juego-")) {
+    const idx = parseInt(category.split("-")[1], 10);
+    return jurors.every(
+      (j) =>
+        db[j.id]?.juegos?.[idx] !== null &&
+        db[j.id]?.juegos?.[idx] !== undefined &&
+        db[j.id]?.juegos?.[idx] !== ""
+    );
+  }
+
+  switch (category) {
+    case "juegos":
+      return jurors.every((j) =>
+        db[j.id]?.juegos &&
+        db[j.id]?.juegos.filter(
+          (v) => v !== null && v !== undefined && v !== ""
+        ).length === 3
+      );
+    case "popurri":
+      return jurors.every((j) =>
+        db[j.id]?.popurri &&
+        db[j.id]?.popurri.filter(
+          (v) => v !== null && v !== undefined && v !== ""
+        ).length === 11
+      );
+    case "mascota":
+      return jurors.every((j) =>
+        db[j.id]?.mascota &&
+        db[j.id]?.mascota.filter(
+          (v) => v !== null && v !== undefined && v !== ""
+        ).length === 5
+      );
+    case "ritmo1":
+      return jurors.every((j) => {
+        const rA = db[j.id]?.ritmo1?.A || {};
+        const rB = db[j.id]?.ritmo1?.B || {};
+        const filledA = Object.values(rA).filter(v => v !== "" && v !== null && v !== undefined).length;
+        const filledB = Object.values(rB).filter(v => v !== "" && v !== null && v !== undefined).length;
+        return filledA === 5 && filledB === 5;
+      });
+    case "ritmo2":
+      return jurors.every((j) => {
+        const rA = db[j.id]?.ritmo2?.A || {};
+        const rB = db[j.id]?.ritmo2?.B || {};
+        const filledA = Object.values(rA).filter(v => v !== "" && v !== null && v !== undefined).length;
+        const filledB = Object.values(rB).filter(v => v !== "" && v !== null && v !== undefined).length;
+        return filledA === 5 && filledB === 5;
+      });
+    case "ritmo3":
+      return jurors.every((j) => {
+        const rA = db[j.id]?.ritmo3?.A || {};
+        const rB = db[j.id]?.ritmo3?.B || {};
+        const filledA = Object.values(rA).filter(v => v !== "" && v !== null && v !== undefined).length;
+        const filledB = Object.values(rB).filter(v => v !== "" && v !== null && v !== undefined).length;
+        return filledA === 5 && filledB === 5;
+      });
+    case "videoclip":
+      return jurors.every((j) => {
+        const rA = db[j.id]?.videoclip?.A || {};
+        const rB = db[j.id]?.videoclip?.B || {};
+        const filledA = Object.values(rA).filter(v => v !== "" && v !== null && v !== undefined).length;
+        const filledB = Object.values(rB).filter(v => v !== "" && v !== null && v !== undefined).length;
+        return filledA === 7 && filledB === 7;
+      });
+    default:
+      return false;
+  }
+};
+
+export const calculateConsensus = (db, jurors) => {
+  const jurorIds = jurors.map((j) => j.id);
+  const individualResults = jurorIds.map((id) => calculateFinal(db[id]));
 
   // 1. Juegos: Cada juego ganado por consenso otorga 6 puntos (acumulativo)
   let juegosA = 0, juegosB = 0;
   const individualGames = [];
   for (let i = 0; i < 3; i++) {
-    let votesA = 0,
-      votesB = 0;
-    submittedIds.forEach((id) => {
-      if (db[id].juegos[i] === "A") votesA++;
-      if (db[id].juegos[i] === "B") votesB++;
-    });
-    const gameWinner = votesA > votesB ? "A" : votesB > votesA ? "B" : null;
-    if (gameWinner === "A") juegosA += 6;
-    else if (gameWinner === "B") juegosB += 6;
-    individualGames.push(gameWinner);
+    const gameFinished = jurorIds.every(
+      (id) =>
+        db[id]?.juegos?.[i] !== null &&
+        db[id]?.juegos?.[i] !== undefined &&
+        db[id]?.juegos?.[i] !== ""
+    );
+    if (gameFinished) {
+      let votesA = 0,
+        votesB = 0;
+      jurorIds.forEach((id) => {
+        if (db[id]?.juegos?.[i] === "A") votesA++;
+        if (db[id]?.juegos?.[i] === "B") votesB++;
+      });
+      const gameWinner = votesA > votesB ? "A" : votesB > votesA ? "B" : null;
+      if (gameWinner === "A") juegosA += 6;
+      else if (gameWinner === "B") juegosB += 6;
+      individualGames.push(gameWinner);
+    } else {
+      individualGames.push(null);
+    }
   }
 
   // 2. Función genérica para premios por mayoría
-  const getConsensusPrize = (keyA, keyB, points) => {
+  const getConsensusPrize = (keyA, keyB, points, categoryKey) => {
+    if (!isCategoryFullyVoted(db, jurors, categoryKey)) {
+      return { a: 0, b: 0 };
+    }
     let winA = 0,
       winB = 0;
-    individualResults.forEach((r) => {
-      if (r[keyA] > r[keyB]) winA++;
-      else if (r[keyB] > r[keyA]) winB++;
+    individualResults.forEach((r, idx) => {
+      if (db[jurorIds[idx]]) {
+        if (r[keyA] > r[keyB]) winA++;
+        else if (r[keyB] > r[keyA]) winB++;
+      }
     });
     if (winA > winB) return { a: points, b: 0 };
     if (winB > winA) return { a: 0, b: points };
     return { a: 0, b: 0 };
   };
 
-  const pop = getConsensusPrize("prizePopA", "prizePopB", 4);
-  const mas = getConsensusPrize("prizeMasA", "prizeMasB", 3);
-  const r1 = getConsensusPrize("prizeR1A", "prizeR1B", 4);
-  const r2 = getConsensusPrize("prizeR2A", "prizeR2B", 4);
-  const r3 = getConsensusPrize("prizeR3A", "prizeR3B", 4);
-  const vidPrize = getConsensusPrize("prizeVidA", "prizeVidB", 15);
+  const pop = getConsensusPrize("prizePopA", "prizePopB", 4, "popurri");
+  const mas = getConsensusPrize("prizeMasA", "prizeMasB", 3, "mascota");
+  const r1 = getConsensusPrize("prizeR1A", "prizeR1B", 4, "ritmo1");
+  const r2 = getConsensusPrize("prizeR2A", "prizeR2B", 4, "ritmo2");
+  const r3 = getConsensusPrize("prizeR3A", "prizeR3B", 4, "ritmo3");
+  const vidPrize = getConsensusPrize("prizeVidA", "prizeVidB", 15, "videoclip");
 
   const breakdown = {
     juegosA,

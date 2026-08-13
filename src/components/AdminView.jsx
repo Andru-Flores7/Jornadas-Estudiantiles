@@ -21,6 +21,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
       { id: "juror1", label: config.jurors.juror1 },
       { id: "juror2", label: config.jurors.juror2 },
       { id: "juror3", label: config.jurors.juror3 },
+      { id: "juror4", label: config.jurors.juror4 },
     ],
     [config.jurors],
   );
@@ -32,6 +33,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
     juror1: false,
     juror2: false,
     juror3: false,
+    juror4: false,
   });
 
   // Memoize consensus calculation — only recomputes when db or jurors change
@@ -254,8 +256,62 @@ const AdminView = ({ db, onBack, onReset, config }) => {
     );
   };
 
+  const getJurorVoteDetails = (jurorId, categoryKey) => {
+    const jurorData = db[jurorId];
+    if (!jurorData || !jurorData.submitted) return { label: "-", winner: null, detail: "" };
+
+    let valA = 0;
+    let valB = 0;
+    let hasData = false;
+    let detailUnit = "pts";
+
+    if (categoryKey === "popurri") {
+      // Popurrí Alternativo: votos por mayoría de ítems (11 ítems)
+      valA = (jurorData.popurri || []).filter((v) => v === "A").length;
+      valB = (jurorData.popurri || []).filter((v) => v === "B").length;
+      hasData = valA > 0 || valB > 0;
+      detailUnit = "votos";
+    } else if (categoryKey === "mascota") {
+      // Popurrí Alternativo de la Mascota: votos por mayoría de ítems (5 ítems)
+      valA = (jurorData.mascota || []).filter((v) => v === "A").length;
+      valB = (jurorData.mascota || []).filter((v) => v === "B").length;
+      hasData = valA > 0 || valB > 0;
+      detailUnit = "votos";
+    } else if (categoryKey === "ritmo1") {
+      // Popurrí Seleccionado Ritmo 1: suma de puntajes (1-5 por criterio, 6 criterios = max 30 c/equipo)
+      valA = Object.values(jurorData.ritmo1?.A || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+      valB = Object.values(jurorData.ritmo1?.B || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+      hasData = valA > 0 || valB > 0;
+      detailUnit = "pts";
+    } else if (categoryKey === "ritmo2") {
+      valA = Object.values(jurorData.ritmo2?.A || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+      valB = Object.values(jurorData.ritmo2?.B || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+      hasData = valA > 0 || valB > 0;
+      detailUnit = "pts";
+    } else if (categoryKey === "ritmo3") {
+      valA = Object.values(jurorData.ritmo3?.A || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+      valB = Object.values(jurorData.ritmo3?.B || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+      hasData = valA > 0 || valB > 0;
+      detailUnit = "pts";
+    } else if (categoryKey === "videoclip") {
+      // Videoclip: suma de puntajes (1-8 por criterio, 7 criterios = max 56 c/equipo)
+      valA = Object.values(jurorData.videoclip?.A || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+      valB = Object.values(jurorData.videoclip?.B || {}).reduce((acc, v) => acc + (Number(v) || 0), 0);
+      hasData = valA > 0 || valB > 0;
+      detailUnit = "pts";
+    }
+
+    if (!hasData) return { label: "-", winner: null, detail: "" };
+
+    const winner = valA > valB ? "A" : valB > valA ? "B" : "EMPATE";
+    const label = winner === "A" ? teamA : winner === "B" ? teamB : "EMPATE";
+    const detail = `${valA} vs ${valB} ${detailUnit}`;
+
+    return { label, winner, detail };
+  };
+
   const anyCategoryFullyVoted = useMemo(() => {
-    return ["juegos", "popurri", "mascota", "ritmo1", "ritmo2", "ritmo3", "videoclip"].some(key => isCategoryFullyVoted(db, jurors, key));
+    return ["juegos", "napolitana", "popurri", "mascota", "ritmo1", "ritmo2", "ritmo3", "videoclip"].some(key => isCategoryFullyVoted(db, jurors, key));
   }, [db, jurors]);
 
 
@@ -317,7 +373,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
               }
             />
           </div>
-          {["juror1", "juror2", "juror3"].map((id, i) => (
+          {["juror1", "juror2", "juror3", "juror4"].map((id, i) => (
             <div className="col-md-4" key={id}>
               <label className="form-label small fw-bold">
                 Nombre Jurado {i + 1}
@@ -431,6 +487,13 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                   a: currentData?.breakdown?.vidA,
                   b: currentData?.breakdown?.vidB,
                 },
+                {
+                  label: "🎨 Napolitana (Honor)",
+                  key: "napolitana",
+                  a: currentData?.breakdown?.napA,
+                  b: currentData?.breakdown?.napB,
+                  honorOnly: true,
+                },
               ].map((cat, i) => {
                 const catVoted = isCategoryFullyVoted(db, jurors, cat.key);
                 return (
@@ -442,6 +505,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                       teamA={teamA}
                       teamB={teamB}
                       hasData={catVoted}
+                      honorOnly={cat.honorOnly}
                     />
                   </div>
                 );
@@ -512,38 +576,69 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                           a: currentData?.breakdown?.vidA,
                           b: currentData?.breakdown?.vidB,
                         },
+                        {
+                          label: "🎨 Napolitana (Honor)",
+                          key: "napolitana",
+                          a: currentData?.breakdown?.napA,
+                          b: currentData?.breakdown?.napB,
+                          honorOnly: true,
+                        },
                       ].map((row, i) => {
                         const voted = isCategoryFullyVoted(db, jurors, row.key);
-                        const rowWinner = !voted
-                          ? "PENDIENTE"
-                          : row.a === row.b
+                        const isHonor = row.honorOnly;
+                        let votesA = row.a;
+                        let votesB = row.b;
+
+                        if (isHonor && voted) {
+                          votesA = jurors.filter((j) => db[j.id]?.napolitana === "A").length;
+                          votesB = jurors.filter((j) => db[j.id]?.napolitana === "B").length;
+                        }
+
+                        const hasRealVotes = voted && (votesA > 0 || votesB > 0);
+                        const rowWinner = !hasRealVotes
+                          ? null
+                          : votesA === votesB
                             ? "EMPATE"
-                            : row.a > row.b
-                              ? teamA
-                              : teamB;
+                            : votesA > votesB
+                              ? isHonor ? `🎨 ${teamA}` : teamA
+                              : isHonor ? `🎨 ${teamB}` : teamB;
                         return (
                           <tr key={i}>
                             <td className="text-start ps-4 opacity-75">
                               {row.label}
                             </td>
                             <td style={{ color: "#ffb74d" }}>
-                              {voted ? row.a : "-"}
+                              {voted ? (isHonor ? `${votesA} voto${votesA !== 1 ? "s" : ""}` : row.a) : "-"}
                             </td>
                             <td style={{ color: "#ffb74d" }}>
-                              {voted ? row.b : "-"}
+                              {voted ? (isHonor ? `${votesB} voto${votesB !== 1 ? "s" : ""}` : row.b) : "-"}
                             </td>
                             <td>
-                              <span
-                                className={`badge ${
-                                  rowWinner === teamA || rowWinner === teamB
-                                    ? "bg-success"
-                                    : rowWinner === "EMPATE"
-                                      ? "bg-warning text-dark"
-                                      : "bg-secondary"
-                                } px-3`}
-                              >
-                                {rowWinner}
-                              </span>
+                              {rowWinner === null ? (
+                                <span
+                                  className="badge px-3"
+                                  style={{
+                                    background: "rgba(255,255,255,0.08)",
+                                    border: "1px solid rgba(255,255,255,0.15)",
+                                    color: "rgba(255,255,255,0.45)",
+                                    fontWeight: "600",
+                                  }}
+                                >
+                                  ⏳ Esperando jurados...
+                                </span>
+                              ) : (
+                                <span
+                                  className={`badge ${
+                                    rowWinner === teamA || rowWinner === `🎨 ${teamA}` || rowWinner === teamB || rowWinner === `🎨 ${teamB}`
+                                      ? isHonor ? "bg-warning text-dark" : "bg-success"
+                                      : rowWinner === "EMPATE"
+                                        ? "bg-warning text-dark"
+                                        : "bg-secondary"
+                                  } px-3`}
+                                >
+                                  {rowWinner}
+                                </span>
+                              )}
                             </td>
                           </tr>
                         );
@@ -562,7 +657,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                           className={`fw-bold ${anyCategoryFullyVoted && currentData?.totalA === currentData?.totalB ? "text-warning" : "text-info"}`}
                         >
                           {!anyCategoryFullyVoted
-                            ? "PENDIENTE"
+                            ? "⏳ Esperando jurados..."
                             : currentData?.totalA === currentData?.totalB
                               ? "EMPATE"
                               : currentData?.totalA > currentData?.totalB
@@ -571,6 +666,78 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                         </td>
                       </tr>
                     </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="row g-4 mb-4">
+            <div className="col-12">
+              <div
+                className="card shadow border-0 h-100"
+                style={{ borderRadius: "20px", overflow: "hidden" }}
+              >
+                <div className="card-header bg-dark text-white py-3 fw-bold text-center text-uppercase tracking-wider">
+                  Votos Individuales de Jurados
+                </div>
+                <div className="card-body p-0 table-responsive">
+                  <table className="table table-hover m-0 align-middle text-center responsive-table-admin">
+                    <thead className="table-light">
+                      <tr>
+                        <th className="text-start ps-4">Categoría</th>
+                        {jurors.map((j) => (
+                          <th key={j.id}>{j.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="fw-bold">
+                      {[
+                        { label: "Popurrí Alternativo", key: "popurri" },
+                        { label: "Popurrí Alternativo de la Mascota", key: "mascota" },
+                        { label: "Popurrí Seleccionado Ritmo 1", key: "ritmo1" },
+                        { label: "Popurrí Seleccionado Ritmo 2", key: "ritmo2" },
+                        { label: "Popurrí Seleccionado Ritmo 3", key: "ritmo3" },
+                        { label: "Video Clip", key: "videoclip" },
+                      ].map((row, i) => (
+                        <tr key={i}>
+                          <td className="text-start ps-4 opacity-75">
+                            {row.label}
+                          </td>
+                          {jurors.map((j) => {
+                            const { label, winner, detail } = getJurorVoteDetails(j.id, row.key);
+                            return (
+                              <td key={j.id}>
+                                {label === "-" ? (
+                                  <span className="text-muted">-</span>
+                                ) : (
+                                  <div>
+                                    <span
+                                      className="badge px-3 py-2"
+                                      style={{
+                                        background:
+                                          winner === "A"
+                                            ? "#ff9800"
+                                            : winner === "B"
+                                              ? "#2196f3"
+                                              : "#6c757d",
+                                        color: winner === "A" ? "#000" : "#fff",
+                                        borderRadius: "8px",
+                                      }}
+                                    >
+                                      {label}
+                                    </span>
+                                    <div className="small text-muted mt-1" style={{ fontSize: "11px" }}>
+                                      {detail}
+                                    </div>
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
                   </table>
                 </div>
               </div>
@@ -666,7 +833,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             <div className="mt-5">
               <div className="winner-badge shadow-lg">
                 <h2 className="m-0 fw-bolder text-uppercase tracking-tighter">
-                  {!anyCategoryFullyVoted
+                  {!allVoted
                     ? "⏳ ESPERANDO JURADOS..."
                     : currentData?.totalA === currentData?.totalB
                       ? "⚖️ EMPATE"
@@ -794,6 +961,31 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                           {renderDots(dataObj?.juegos, 3)}
                         </div>
 
+                        {/* Napolitana */}
+                        <div>
+                          <div
+                            className="small opacity-75 fw-bold mb-1"
+                            style={{ fontSize: "0.75rem" }}
+                          >
+                            Napolitana:
+                          </div>
+                          <div className="d-flex gap-1 flex-wrap justify-content-center">
+                            <span
+                              className="d-inline-flex align-items-center justify-content-center fw-bold rounded-circle shadow-sm"
+                              style={{
+                                width: "28px",
+                                height: "28px",
+                                fontSize: "9px",
+                                background: dataObj?.napolitana === "A" ? "#ff9800" : dataObj?.napolitana === "B" ? "#2196f3" : "rgba(255,255,255,0.15)",
+                                color: dataObj?.napolitana ? "#000" : "rgba(255,255,255,0.4)",
+                                border: dataObj?.napolitana ? "none" : "1px solid rgba(255,255,255,0.1)",
+                              }}
+                            >
+                              {dataObj?.napolitana || "-"}
+                            </span>
+                          </div>
+                        </div>
+
                         {/* Popurrí */}
                         <div>
                           <div
@@ -827,7 +1019,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                               Ritmo 1
                             </div>
                             <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2 px-1">
-                              {jp.progress.ritmo1.filled} / 10
+                              {jp.progress.ritmo1.filled} / 12
                             </div>
                           </div>
                           <div className="col-4">
@@ -838,7 +1030,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                               Ritmo 2
                             </div>
                             <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2 px-1">
-                              {jp.progress.ritmo2.filled} / 10
+                              {jp.progress.ritmo2.filled} / 12
                             </div>
                           </div>
                           <div className="col-4">
@@ -849,7 +1041,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                               Ritmo 3
                             </div>
                             <div className="badge bg-dark w-100 text-center border border-white border-opacity-10 py-2 px-1">
-                              {jp.progress.ritmo3.filled} / 10
+                              {jp.progress.ritmo3.filled} / 12
                             </div>
                           </div>
                         </div>

@@ -8,7 +8,7 @@ const RoleSelection = ({ onSelect, config }) => (
     >
       <h1 className="fw-bold text-primary mb-4">Jornadas Estudiantiles 2026</h1>
       <div className="row g-3">
-        {["juror1", "juror2", "juror3"].map((id) => (
+        {["juror1", "juror2", "juror3", "juror4"].map((id) => (
           <div className="col-12" key={id}>
             <button
               className="btn btn-outline-primary btn-lg w-100 py-3 fw-bold"

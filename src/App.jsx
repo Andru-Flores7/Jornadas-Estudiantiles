@@ -31,7 +31,7 @@ const LoadingSpinner = () => (
 const App = () => {
   const [role, setRole] = useState(null);
   const [jurorData, setJurorData] = useState(createInitialJurorState());
-  const [db, setDb] = useState({ juror1: null, juror2: null, juror3: null });
+  const [db, setDb] = useState({ juror1: null, juror2: null, juror3: null, juror4: null });
   const [config, setConfig] = useState(initialConfig);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -45,7 +45,7 @@ const App = () => {
     const fetchData = async () => {
       const { data } = await supabase.from("jornadas_scores").select("*");
       if (data) {
-        const newDb = { juror1: null, juror2: null, juror3: null };
+        const newDb = { juror1: null, juror2: null, juror3: null, juror4: null };
         data.forEach((row) => {
           if (row.juror_id === "config") {
             setConfig(row.payload);
@@ -178,7 +178,7 @@ const App = () => {
         .delete()
         .neq("juror_id", "null_check");
       if (!error) {
-        setDb({ juror1: null, juror2: null, juror3: null });
+        setDb({ juror1: null, juror2: null, juror3: null, juror4: null });
         setConfig(initialConfig);
         alert("Sistema reseteado completamente.");
       }

@@ -1,7 +1,9 @@
 import React from "react";
 
-const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
-  const winner = !hasData ? null : a === b ? "EMPATE" : a > b ? teamA : teamB;
+const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData, honorOnly }) => {
+  // No mostrar ganador si: no hay datos, o ambos puntajes son 0 (no hubo ganador en esta categoría)
+  const hasRealResult = hasData && (a > 0 || b > 0);
+  const winner = !hasRealResult ? null : a === b ? "EMPATE" : a > b ? teamA : teamB;
   return (
     <div
       className="card border-0 shadow-lg text-white mb-5"
@@ -33,7 +35,7 @@ const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
                 lineHeight: "1",
               }}
             >
-              {a}
+              {honorOnly ? (a > b ? "1" : "0") : a}
             </div>
             <div
               className="opacity-75 fw-bold mt-2 px-2"
@@ -57,7 +59,7 @@ const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
                 lineHeight: "1",
               }}
             >
-              {b}
+              {honorOnly ? (b > a ? "1" : "0") : b}
             </div>
             <div
               className="opacity-75 fw-bold mt-2 px-2"
@@ -73,20 +75,29 @@ const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData }) => {
             <div
               className="py-2 px-3 rounded-pill shadow-sm d-inline-block w-100"
               style={{
-                background: "linear-gradient(to right, #ba8b02, #ffd700)",
+                background: honorOnly
+                  ? "linear-gradient(to right, #f39c12, #f1c40f)"
+                  : "linear-gradient(to right, #ba8b02, #ffd700)",
                 color: "#000",
                 fontSize: "clamp(0.9rem, 1.2vw, 1.2rem)",
                 fontWeight: "900",
               }}
             >
-              🏆 {winner === "EMPATE" ? "EMPATE" : `GANADOR: ${winner}`}
+              {honorOnly ? "🎨" : "🏆"} {winner === "EMPATE" ? "EMPATE" : `GANADOR: ${winner}`}
             </div>
           ) : (
             <div
-              className="py-2 px-3 rounded-pill border border-secondary opacity-25 d-inline-block w-100"
-              style={{ fontSize: "clamp(0.9rem, 1.2vw, 1.2rem)" }}
+              className="py-2 px-3 rounded-pill d-inline-block w-100"
+              style={{
+                fontSize: "clamp(0.9rem, 1.2vw, 1.2rem)",
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                color: "rgba(255,255,255,0.5)",
+                fontWeight: "600",
+                letterSpacing: "1px",
+              }}
             >
-              PENDIENTE
+              ⏳ Esperando jurados...
             </div>
           )}
         </div>

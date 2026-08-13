@@ -3,6 +3,7 @@ export const createInitialJurorState = () => ({
   submitted: false,
   header: { jury: "", matchNo: "", teamA: "Equipo A", teamB: "Equipo B" },
   juegos: Array(3).fill(null),
+  napolitana: null,
   popurri: Array(11).fill(null),
   mascota: Array(5).fill(null),
   ritmo1: {
@@ -12,6 +13,7 @@ export const createInitialJurorState = () => ({
       desplazamiento: "",
       coordinacion: "",
       "conexion en pareja": "",
+      escenografia: "",
     },
     B: {
       vestimenta: "",
@@ -19,6 +21,7 @@ export const createInitialJurorState = () => ({
       desplazamiento: "",
       coordinacion: "",
       "conexion en pareja": "",
+      escenografia: "",
     },
   },
   ritmo2: {
@@ -28,6 +31,7 @@ export const createInitialJurorState = () => ({
       desplazamiento: "",
       coordinacion: "",
       "conexion en pareja": "",
+      escenografia: "",
     },
     B: {
       vestimenta: "",
@@ -35,6 +39,7 @@ export const createInitialJurorState = () => ({
       desplazamiento: "",
       coordinacion: "",
       "conexion en pareja": "",
+      escenografia: "",
     },
   },
   ritmo3: {
@@ -44,6 +49,7 @@ export const createInitialJurorState = () => ({
       desplazamiento: "",
       coordinacion: "",
       "conexion en pareja": "",
+      escenografia: "",
     },
     B: {
       vestimenta: "",
@@ -51,6 +57,7 @@ export const createInitialJurorState = () => ({
       desplazamiento: "",
       coordinacion: "",
       "conexion en pareja": "",
+      escenografia: "",
     },
   },
   videoclip: {
@@ -105,6 +112,7 @@ export const initialConfig = {
     juror1: "Jurado 1",
     juror2: "Jurado 2",
     juror3: "Jurado 3",
+    juror4: "Jurado 4",
   },
 };
 
@@ -113,6 +121,11 @@ export const calculateFinal = (data) => {
   // Cada juego ganado otorga 6 puntos (acumulativo, máximo 18 pts)
   const ptsJuegosA = data.juegos.filter((v) => v === "A").length * 6;
   const ptsJuegosB = data.juegos.filter((v) => v === "B").length * 6;
+
+  // Napolitana: solo declara ganador, no suma puntos
+  const napWinner = data.napolitana || null;
+  const prizeNapA = napWinner === "A" ? 1 : 0; // 1 = ganó (simbólico, no suma al total)
+  const prizeNapB = napWinner === "B" ? 1 : 0;
 
   const countPopA = data.popurri.filter((v) => v === "A").length,
     countPopB = data.popurri.filter((v) => v === "B").length;
@@ -171,6 +184,8 @@ export const calculateFinal = (data) => {
   return {
     ptsJuegosA,
     ptsJuegosB,
+    prizeNapA,
+    prizeNapB,
     prizePopA,
     prizePopB,
     prizeMasA,
@@ -185,6 +200,7 @@ export const calculateFinal = (data) => {
     sumVidB,
     prizeVidA,
     prizeVidB,
+    // napolitana no suma al total
     totalA:
       ptsJuegosA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeR3A + prizeVidA,
     totalB:
@@ -194,74 +210,7 @@ export const calculateFinal = (data) => {
 
 export const isCategoryFullyVoted = (db, jurors, category) => {
   if (!db) return false;
-
-  if (category.startsWith("juego-")) {
-    const idx = parseInt(category.split("-")[1], 10);
-    return jurors.every(
-      (j) =>
-        db[j.id]?.juegos?.[idx] !== null &&
-        db[j.id]?.juegos?.[idx] !== undefined &&
-        db[j.id]?.juegos?.[idx] !== ""
-    );
-  }
-
-  switch (category) {
-    case "juegos":
-      return jurors.every((j) =>
-        db[j.id]?.juegos &&
-        db[j.id]?.juegos.filter(
-          (v) => v !== null && v !== undefined && v !== ""
-        ).length === 3
-      );
-    case "popurri":
-      return jurors.every((j) =>
-        db[j.id]?.popurri &&
-        db[j.id]?.popurri.filter(
-          (v) => v !== null && v !== undefined && v !== ""
-        ).length === 11
-      );
-    case "mascota":
-      return jurors.every((j) =>
-        db[j.id]?.mascota &&
-        db[j.id]?.mascota.filter(
-          (v) => v !== null && v !== undefined && v !== ""
-        ).length === 5
-      );
-    case "ritmo1":
-      return jurors.every((j) => {
-        const rA = db[j.id]?.ritmo1?.A || {};
-        const rB = db[j.id]?.ritmo1?.B || {};
-        const filledA = Object.values(rA).filter(v => v !== "" && v !== null && v !== undefined).length;
-        const filledB = Object.values(rB).filter(v => v !== "" && v !== null && v !== undefined).length;
-        return filledA === 5 && filledB === 5;
-      });
-    case "ritmo2":
-      return jurors.every((j) => {
-        const rA = db[j.id]?.ritmo2?.A || {};
-        const rB = db[j.id]?.ritmo2?.B || {};
-        const filledA = Object.values(rA).filter(v => v !== "" && v !== null && v !== undefined).length;
-        const filledB = Object.values(rB).filter(v => v !== "" && v !== null && v !== undefined).length;
-        return filledA === 5 && filledB === 5;
-      });
-    case "ritmo3":
-      return jurors.every((j) => {
-        const rA = db[j.id]?.ritmo3?.A || {};
-        const rB = db[j.id]?.ritmo3?.B || {};
-        const filledA = Object.values(rA).filter(v => v !== "" && v !== null && v !== undefined).length;
-        const filledB = Object.values(rB).filter(v => v !== "" && v !== null && v !== undefined).length;
-        return filledA === 5 && filledB === 5;
-      });
-    case "videoclip":
-      return jurors.every((j) => {
-        const rA = db[j.id]?.videoclip?.A || {};
-        const rB = db[j.id]?.videoclip?.B || {};
-        const filledA = Object.values(rA).filter(v => v !== "" && v !== null && v !== undefined).length;
-        const filledB = Object.values(rB).filter(v => v !== "" && v !== null && v !== undefined).length;
-        return filledA === 7 && filledB === 7;
-      });
-    default:
-      return false;
-  }
+  return jurors.every((j) => db[j.id]?.submitted === true);
 };
 
 export const calculateConsensus = (db, jurors) => {
@@ -312,6 +261,7 @@ export const calculateConsensus = (db, jurors) => {
     return { a: 0, b: 0 };
   };
 
+  const nap = getConsensusPrize("prizeNapA", "prizeNapB", 1, "napolitana"); // simbólico, no suma al total
   const pop = getConsensusPrize("prizePopA", "prizePopB", 4, "popurri");
   const mas = getConsensusPrize("prizeMasA", "prizeMasB", 3, "mascota");
   const r1 = getConsensusPrize("prizeR1A", "prizeR1B", 4, "ritmo1");
@@ -323,6 +273,8 @@ export const calculateConsensus = (db, jurors) => {
     juegosA,
     juegosB,
     individualGames, // [A, B, null]
+    napA: nap.a, // simbólico
+    napB: nap.b,
     popA: pop.a,
     popB: pop.b,
     masA: mas.a,
@@ -338,6 +290,7 @@ export const calculateConsensus = (db, jurors) => {
   };
 
   return {
+    // napolitana NO suma al total
     totalA: juegosA + pop.a + mas.a + r1.a + r2.a + r3.a + breakdown.vidA,
     totalB: juegosB + pop.b + mas.b + r1.b + r2.b + r3.b + breakdown.vidB,
     breakdown,
@@ -350,19 +303,21 @@ export const calculateJurorProgress = (data) => {
       isStarted: false,
       submitted: false,
       juegos: { filled: 0, total: 3 },
+      napolitana: { filled: 0, total: 1 },
       popurri: { filled: 0, total: 11 },
       mascota: { filled: 0, total: 5 },
-      ritmo1: { filled: 0, total: 10 },
-      ritmo2: { filled: 0, total: 10 },
-      ritmo3: { filled: 0, total: 10 },
+      ritmo1: { filled: 0, total: 12 },
+      ritmo2: { filled: 0, total: 12 },
+      ritmo3: { filled: 0, total: 12 },
       videoclip: { filled: 0, total: 14 },
       totalFilled: 0,
-      totalItems: 63,
+      totalItems: 70,
       pct: 0,
     };
   }
 
   const juegosFilled = data.juegos ? data.juegos.filter(x => x !== null && x !== "").length : 0;
+  const napolitanaFilled = (data.napolitana !== null && data.napolitana !== undefined && data.napolitana !== "") ? 1 : 0;
   const popurriFilled = data.popurri ? data.popurri.filter(x => x !== null && x !== "").length : 0;
   const mascotaFilled = data.mascota ? data.mascota.filter(x => x !== null && x !== "").length : 0;
 
@@ -382,19 +337,20 @@ export const calculateJurorProgress = (data) => {
     ? (Object.values(data.videoclip.A || {}).filter(x => x !== "").length + Object.values(data.videoclip.B || {}).filter(x => x !== "").length)
     : 0;
 
-  const totalFilled = juegosFilled + popurriFilled + mascotaFilled + ritmo1Filled + ritmo2Filled + ritmo3Filled + videoclipFilled;
-  const totalItems = 63;
+  const totalFilled = juegosFilled + napolitanaFilled + popurriFilled + mascotaFilled + ritmo1Filled + ritmo2Filled + ritmo3Filled + videoclipFilled;
+  const totalItems = 70;
   const pct = Math.round((totalFilled / totalItems) * 100);
 
   return {
     isStarted: totalFilled > 0 || !!data.submitted,
     submitted: !!data.submitted,
     juegos: { filled: juegosFilled, total: 3 },
+    napolitana: { filled: napolitanaFilled, total: 1 },
     popurri: { filled: popurriFilled, total: 11 },
     mascota: { filled: mascotaFilled, total: 5 },
-    ritmo1: { filled: ritmo1Filled, total: 10 },
-    ritmo2: { filled: ritmo2Filled, total: 10 },
-    ritmo3: { filled: ritmo3Filled, total: 10 },
+    ritmo1: { filled: ritmo1Filled, total: 12 },
+    ritmo2: { filled: ritmo2Filled, total: 12 },
+    ritmo3: { filled: ritmo3Filled, total: 12 },
     videoclip: { filled: videoclipFilled, total: 14 },
     totalFilled,
     totalItems,

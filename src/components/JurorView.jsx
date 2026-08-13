@@ -276,6 +276,7 @@ const JurorView = ({
                               key: "conexion en pareja",
                               label: "Conexion en pareja",
                             },
+                            { key: "escenografia", label: "Escenografía" },
                           ].map((c) => (
                             <tr key={c.key}>
                               <td className="text-start small opacity-75">
@@ -403,6 +404,48 @@ const JurorView = ({
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </section>
+        {/* NAPOLITANA */}
+        <section className="col-12">
+          <div className="card shadow-sm border-0">
+            <div className="card-header text-white fw-bold">
+              NAPOLITANA (Lienzo Gigante) — Elegir Ganador
+            </div>
+            <div className="card-body">
+              <p className="small opacity-75 mb-3">
+                Selecciona el equipo con mejor napolitana. Solo se puede elegir
+                uno.
+              </p>
+              <div className="d-flex gap-3 justify-content-center">
+                {["A", "B"].map((team) => (
+                  <button
+                    key={team}
+                    className={`btn btn-lg fw-bold px-5 py-3 ${
+                      data.napolitana === team ? "btn-success" : "btn-outline-secondary"
+                    }`}
+                    style={{ minWidth: "160px", borderRadius: "16px", fontSize: "1.1rem" }}
+                    onClick={() => {
+                      setData({
+                        ...data,
+                        napolitana: data.napolitana === team ? null : team,
+                        submitted: false,
+                      });
+                    }}
+                  >
+                    {team === "A" ? config.teamA : config.teamB}
+                    {data.napolitana === team && " ✓"}
+                  </button>
+                ))}
+              </div>
+              {data.napolitana && (
+                <div className="text-center mt-3">
+                  <span className="badge bg-success px-3 py-2" style={{ fontSize: "0.9rem" }}>
+                    🎨 Ganador: {data.napolitana === "A" ? config.teamA : config.teamB}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </section>

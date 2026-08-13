@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "../supabase";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -23,7 +23,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
       { id: "juror3", label: config.jurors.juror3 },
       { id: "juror4", label: config.jurors.juror4 },
     ],
-    [config.jurors],
+    [config],
   );
 
   const [editConfig, setEditConfig] = useState(config);
@@ -43,14 +43,13 @@ const AdminView = ({ db, onBack, onReset, config }) => {
   );
 
   // Memoize per-juror results — avoids calling calculateFinal on every render
-  const jurorResults = useMemo(
-    () =>
-      jurors.map((j) => ({
-        id: j.id,
-        result: db[j.id] ? calculateFinal(db[j.id]) : null,
-      })),
-    [db, jurors],
-  );
+  const jurorResults = useMemo(() => {
+    return jurors.map((j) => ({
+      id: j.id,
+      label: j.label,
+      result: db[j.id] ? calculateFinal(db[j.id]) : null,
+    }));
+  }, [db, jurors]);
 
   // Memoize juror progress metrics
   const jurorProgressData = useMemo(() => {
@@ -67,7 +66,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
     });
   }, [db, jurors]);
 
-  // Verificamos estrictamente que los 3 jurados hayan presionado "Enviar"
+  // Verificamos estrictamente que los jurados hayan presionado "Enviar"
   const allVoted = useMemo(() => {
     return jurors.every((j) => db[j.id] && db[j.id].submitted === true);
   }, [db, jurors]);
@@ -77,7 +76,8 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
   useEffect(() => {
     if (allVoted) {
-      // Cuando los tres votan, guardamos esta "foto" de los resultados
+      // Cuando los jurados votan, guardamos esta "foto" de los resultados
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPersistedResults({
         totalA,
         totalB,
@@ -87,7 +87,9 @@ const AdminView = ({ db, onBack, onReset, config }) => {
     } else {
       // Si se limpia el evento por completo, reseteamos la persistencia
       const anyActivity = jurors.some((j) => db[j.id]);
-      if (!anyActivity) setPersistedResults(null);
+      if (!anyActivity) {
+        setPersistedResults(null);
+      }
     }
   }, [allVoted, totalA, totalB, breakdown, jurorResults, db, jurors]);
 
@@ -488,11 +490,10 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                   b: currentData?.breakdown?.vidB,
                 },
                 {
-                  label: "🎨 Napolitana (Honor)",
+                  label: "🎨 Napolitana",
                   key: "napolitana",
                   a: currentData?.breakdown?.napA,
                   b: currentData?.breakdown?.napB,
-                  honorOnly: true,
                 },
               ].map((cat, i) => {
                 const catVoted = isCategoryFullyVoted(db, jurors, cat.key);
@@ -577,11 +578,10 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                           b: currentData?.breakdown?.vidB,
                         },
                         {
-                          label: "🎨 Napolitana (Honor)",
+                          label: "Ganador Napolitana",
                           key: "napolitana",
                           a: currentData?.breakdown?.napA,
                           b: currentData?.breakdown?.napB,
-                          honorOnly: true,
                         },
                       ].map((row, i) => {
                         const voted = isCategoryFullyVoted(db, jurors, row.key);

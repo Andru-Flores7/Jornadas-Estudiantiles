@@ -1,4 +1,3 @@
-import React from "react";
 
 const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData, honorOnly }) => {
   // No mostrar ganador si: no hay datos, o ambos puntajes son 0 (no hubo ganador en esta categoría)

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { calculateFinal } from "../utils/scoring";
 
 const JurorView = ({

@@ -122,10 +122,10 @@ export const calculateFinal = (data) => {
   const ptsJuegosA = data.juegos.filter((v) => v === "A").length * 6;
   const ptsJuegosB = data.juegos.filter((v) => v === "B").length * 6;
 
-  // Napolitana: solo declara ganador, no suma puntos
+  // Napolitana: el ganador suma 4 puntos
   const napWinner = data.napolitana || null;
-  const prizeNapA = napWinner === "A" ? 1 : 0; // 1 = ganó (simbólico, no suma al total)
-  const prizeNapB = napWinner === "B" ? 1 : 0;
+  const prizeNapA = napWinner === "A" ? 4 : 0;
+  const prizeNapB = napWinner === "B" ? 4 : 0;
 
   const countPopA = data.popurri.filter((v) => v === "A").length,
     countPopB = data.popurri.filter((v) => v === "B").length;
@@ -200,15 +200,14 @@ export const calculateFinal = (data) => {
     sumVidB,
     prizeVidA,
     prizeVidB,
-    // napolitana no suma al total
     totalA:
-      ptsJuegosA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeR3A + prizeVidA,
+      ptsJuegosA + prizeNapA + prizePopA + prizeMasA + prizeR1A + prizeR2A + prizeR3A + prizeVidA,
     totalB:
-      ptsJuegosB + prizePopB + prizeMasB + prizeR1B + prizeR2B + prizeR3B + prizeVidB,
+      ptsJuegosB + prizeNapB + prizePopB + prizeMasB + prizeR1B + prizeR2B + prizeR3B + prizeVidB,
   };
 };
 
-export const isCategoryFullyVoted = (db, jurors, category) => {
+export const isCategoryFullyVoted = (db, jurors) => {
   if (!db) return false;
   return jurors.every((j) => db[j.id]?.submitted === true);
 };
@@ -261,7 +260,7 @@ export const calculateConsensus = (db, jurors) => {
     return { a: 0, b: 0 };
   };
 
-  const nap = getConsensusPrize("prizeNapA", "prizeNapB", 1, "napolitana"); // simbólico, no suma al total
+  const nap = getConsensusPrize("prizeNapA", "prizeNapB", 4, "napolitana");
   const pop = getConsensusPrize("prizePopA", "prizePopB", 4, "popurri");
   const mas = getConsensusPrize("prizeMasA", "prizeMasB", 3, "mascota");
   const r1 = getConsensusPrize("prizeR1A", "prizeR1B", 4, "ritmo1");
@@ -273,7 +272,7 @@ export const calculateConsensus = (db, jurors) => {
     juegosA,
     juegosB,
     individualGames, // [A, B, null]
-    napA: nap.a, // simbólico
+    napA: nap.a,
     napB: nap.b,
     popA: pop.a,
     popB: pop.b,
@@ -290,9 +289,8 @@ export const calculateConsensus = (db, jurors) => {
   };
 
   return {
-    // napolitana NO suma al total
-    totalA: juegosA + pop.a + mas.a + r1.a + r2.a + r3.a + breakdown.vidA,
-    totalB: juegosB + pop.b + mas.b + r1.b + r2.b + r3.b + breakdown.vidB,
+    totalA: juegosA + nap.a + pop.a + mas.a + r1.a + r2.a + r3.a + breakdown.vidA,
+    totalB: juegosB + nap.b + pop.b + mas.b + r1.b + r2.b + r3.b + breakdown.vidB,
     breakdown,
   };
 };

@@ -112,7 +112,7 @@ const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData, honorOnly }) =
                 boxShadow: "0 8px 25px rgba(245, 158, 11, 0.4)",
               }}
             >
-              {honorOnly ? "🎨" : "🏆"} {winner === "EMPATE" ? "EMPATE EN CATEGORÍA" : `GANADOR: ${winner}`}
+              {honorOnly ? "🎨" : "🏆"} {winner === "EMPATE" ? "empate" : `GANADOR: ${winner}`}
             </div>
           ) : (
             <div

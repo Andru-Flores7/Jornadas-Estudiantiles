@@ -66,7 +66,7 @@ export const createInitialJurorState = () => ({
       "composicion coreografica": "",
       "adaptacion al tiempo musical": "",
       "uso del espacio": "",
-      "trabajo en equipo": "",
+      "impacto visual": "",
       carisma: "",
       escenografia: "",
     },
@@ -75,7 +75,7 @@ export const createInitialJurorState = () => ({
       "composicion coreografica": "",
       "adaptacion al tiempo musical": "",
       "uso del espacio": "",
-      "trabajo en equipo": "",
+      "impacto visual": "",
       carisma: "",
       escenografia: "",
     },
@@ -129,13 +129,13 @@ export const calculateFinal = (data) => {
 
   const countPopA = data.popurri.filter((v) => v === "A").length,
     countPopB = data.popurri.filter((v) => v === "B").length;
-  const prizePopA = countPopA > countPopB && countPopA > 0 ? 4 : 0;
-  const prizePopB = countPopB > countPopA && countPopB > 0 ? 4 : 0;
+  const prizePopA = countPopA > countPopB ? 4 : countPopB > countPopA ? 0 : (countPopA > 0 ? 2 : 0);
+  const prizePopB = countPopB > countPopA ? 4 : countPopA > countPopB ? 0 : (countPopB > 0 ? 2 : 0);
 
   const countMasA = data.mascota.filter((v) => v === "A").length,
     countMasB = data.mascota.filter((v) => v === "B").length;
-  const prizeMasA = countMasA > countMasB && countMasA > 0 ? 3 : 0;
-  const prizeMasB = countMasB > countMasA && countMasB > 0 ? 3 : 0;
+  const prizeMasA = countMasA > countMasB ? 3 : countMasB > countMasA ? 0 : (countMasA > 0 ? 1.5 : 0);
+  const prizeMasB = countMasB > countMasA ? 3 : countMasA > countMasB ? 0 : (countMasB > 0 ? 1.5 : 0);
 
   const sumR1A = Object.values(data.ritmo1.A).reduce(
     (acc, v) => acc + (Number(v) || 0),
@@ -145,8 +145,8 @@ export const calculateFinal = (data) => {
     (acc, v) => acc + (Number(v) || 0),
     0,
   );
-  const prizeR1A = sumR1A > sumR1B && sumR1A > 0 ? 4 : 0;
-  const prizeR1B = sumR1B > sumR1A && sumR1B > 0 ? 4 : 0;
+  const prizeR1A = sumR1A > sumR1B ? 4 : sumR1B > sumR1A ? 0 : (sumR1A > 0 ? 2 : 0);
+  const prizeR1B = sumR1B > sumR1A ? 4 : sumR1A > sumR1B ? 0 : (sumR1B > 0 ? 2 : 0);
 
   const sumR2A = Object.values(data.ritmo2.A).reduce(
     (acc, v) => acc + (Number(v) || 0),
@@ -156,8 +156,8 @@ export const calculateFinal = (data) => {
     (acc, v) => acc + (Number(v) || 0),
     0,
   );
-  const prizeR2A = sumR2A > sumR2B && sumR2A > 0 ? 4 : 0;
-  const prizeR2B = sumR2B > sumR2A && sumR2B > 0 ? 4 : 0;
+  const prizeR2A = sumR2A > sumR2B ? 4 : sumR2B > sumR2A ? 0 : (sumR2A > 0 ? 2 : 0);
+  const prizeR2B = sumR2B > sumR2A ? 4 : sumR2A > sumR2B ? 0 : (sumR2B > 0 ? 2 : 0);
 
   const sumR3A = Object.values(data.ritmo3.A).reduce(
     (acc, v) => acc + (Number(v) || 0),
@@ -167,8 +167,8 @@ export const calculateFinal = (data) => {
     (acc, v) => acc + (Number(v) || 0),
     0,
   );
-  const prizeR3A = sumR3A > sumR3B && sumR3A > 0 ? 4 : 0;
-  const prizeR3B = sumR3B > sumR3A && sumR3B > 0 ? 4 : 0;
+  const prizeR3A = sumR3A > sumR3B ? 4 : sumR3B > sumR3A ? 0 : (sumR3A > 0 ? 2 : 0);
+  const prizeR3B = sumR3B > sumR3A ? 4 : sumR3A > sumR3B ? 0 : (sumR3B > 0 ? 2 : 0);
 
   const sumVidA = Object.values(data.videoclip.A).reduce(
     (acc, v) => acc + (Number(v) || 0),
@@ -178,8 +178,8 @@ export const calculateFinal = (data) => {
     (acc, v) => acc + (Number(v) || 0),
     0,
   );
-  const prizeVidA = sumVidA > sumVidB && sumVidA > 0 ? 15 : 0;
-  const prizeVidB = sumVidB > sumVidA && sumVidB > 0 ? 15 : 0;
+  const prizeVidA = sumVidA > sumVidB ? 15 : sumVidB > sumVidA ? 0 : (sumVidA > 0 ? 7.5 : 0);
+  const prizeVidB = sumVidB > sumVidA ? 15 : sumVidA > sumVidB ? 0 : (sumVidB > 0 ? 7.5 : 0);
 
   return {
     ptsJuegosA,
@@ -207,9 +207,58 @@ export const calculateFinal = (data) => {
   };
 };
 
-export const isCategoryFullyVoted = (db, jurors) => {
-  if (!db) return false;
-  return jurors.every((j) => db[j.id]?.submitted === true);
+export const isJurorCategoryComplete = (data, category) => {
+  if (!data) return false;
+  if (!data.submitted) return false;
+  if (!category) return true;
+
+  if (category === "juegos") {
+    return Array.isArray(data.juegos) && data.juegos.length === 3 && data.juegos.every((v) => v === "A" || v === "B");
+  }
+  if (category.startsWith("juego-")) {
+    const idx = parseInt(category.split("-")[1], 10);
+    return Array.isArray(data.juegos) && (data.juegos[idx] === "A" || data.juegos[idx] === "B");
+  }
+  if (category === "napolitana") {
+    return data.napolitana === "A" || data.napolitana === "B";
+  }
+  if (category === "popurri") {
+    return Array.isArray(data.popurri) && data.popurri.length === 11 && data.popurri.every((v) => v === "A" || v === "B");
+  }
+  if (category === "mascota") {
+    return Array.isArray(data.mascota) && data.mascota.length === 5 && data.mascota.every((v) => v === "A" || v === "B");
+  }
+  if (category === "ritmo1") {
+    const r1A = Object.values(data.ritmo1?.A || {}).filter((v) => v !== "" && v !== null && v !== undefined).length;
+    const r1B = Object.values(data.ritmo1?.B || {}).filter((v) => v !== "" && v !== null && v !== undefined).length;
+    return r1A === 6 && r1B === 6;
+  }
+  if (category === "ritmo2") {
+    const r2A = Object.values(data.ritmo2?.A || {}).filter((v) => v !== "" && v !== null && v !== undefined).length;
+    const r2B = Object.values(data.ritmo2?.B || {}).filter((v) => v !== "" && v !== null && v !== undefined).length;
+    return r2A === 6 && r2B === 6;
+  }
+  if (category === "ritmo3") {
+    const r3A = Object.values(data.ritmo3?.A || {}).filter((v) => v !== "" && v !== null && v !== undefined).length;
+    const r3B = Object.values(data.ritmo3?.B || {}).filter((v) => v !== "" && v !== null && v !== undefined).length;
+    return r3A === 6 && r3B === 6;
+  }
+  if (category === "videoclip") {
+    const vidA = Object.values(data.videoclip?.A || {}).filter((v) => v !== "" && v !== null && v !== undefined).length;
+    const vidB = Object.values(data.videoclip?.B || {}).filter((v) => v !== "" && v !== null && v !== undefined).length;
+    return vidA === 7 && vidB === 7;
+  }
+
+  return false;
+};
+
+export const isCategoryFullyVoted = (db, jurors, category) => {
+  if (!db || !jurors || jurors.length === 0) return false;
+  return jurors.every((j) => {
+    const jurorData = db[j.id];
+    if (!jurorData || !jurorData.submitted) return false;
+    return isJurorCategoryComplete(jurorData, category);
+  });
 };
 
 export const calculateConsensus = (db, jurors) => {
@@ -222,6 +271,7 @@ export const calculateConsensus = (db, jurors) => {
   for (let i = 0; i < 3; i++) {
     const gameFinished = jurorIds.every(
       (id) =>
+        db[id]?.submitted === true &&
         db[id]?.juegos?.[i] !== null &&
         db[id]?.juegos?.[i] !== undefined &&
         db[id]?.juegos?.[i] !== ""
@@ -233,9 +283,13 @@ export const calculateConsensus = (db, jurors) => {
         if (db[id]?.juegos?.[i] === "A") votesA++;
         if (db[id]?.juegos?.[i] === "B") votesB++;
       });
-      const gameWinner = votesA > votesB ? "A" : votesB > votesA ? "B" : null;
+      const gameWinner = votesA > votesB ? "A" : votesB > votesA ? "B" : (votesA > 0 && votesA === votesB ? "EMPATE" : null);
       if (gameWinner === "A") juegosA += 6;
       else if (gameWinner === "B") juegosB += 6;
+      else if (gameWinner === "EMPATE") {
+        juegosA += 3;
+        juegosB += 3;
+      }
       individualGames.push(gameWinner);
     } else {
       individualGames.push(null);
@@ -257,6 +311,7 @@ export const calculateConsensus = (db, jurors) => {
     });
     if (winA > winB) return { a: points, b: 0 };
     if (winB > winA) return { a: 0, b: points };
+    if (winA > 0 && winA === winB) return { a: points / 2, b: points / 2 };
     return { a: 0, b: 0 };
   };
 

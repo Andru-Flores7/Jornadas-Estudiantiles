@@ -94,14 +94,14 @@ const AdminView = ({ db, onBack, onReset, config }) => {
   }, [allVoted, totalA, totalB, breakdown, jurorResults, db, jurors]);
 
   // Determinar si hay algo oficial o parcial que mostrar
-  const showRes = allVoted || !!persistedResults;
-  const rData = allVoted
-    ? { totalA, totalB, breakdown, jurorResults }
-    : persistedResults;
+  const anyCategoryFullyVoted = useMemo(() => {
+    return ["juegos", "napolitana", "popurri", "mascota", "ritmo1", "ritmo2", "ritmo3", "videoclip"].some((key) =>
+      isCategoryFullyVoted(db, jurors, key),
+    );
+  }, [db, jurors]);
 
-  const currentData = showRes
-    ? rData
-    : { totalA, totalB, breakdown };
+  const showRes = allVoted || anyCategoryFullyVoted || !!persistedResults;
+  const currentData = { totalA, totalB, breakdown, jurorResults };
 
   const handleSaveConfig = async () => {
     setIsSaving(true);
@@ -267,7 +267,12 @@ const AdminView = ({ db, onBack, onReset, config }) => {
     let hasData = false;
     let detailUnit = "pts";
 
-    if (categoryKey === "popurri") {
+    if (categoryKey === "napolitana") {
+      valA = jurorData.napolitana === "A" ? 1 : 0;
+      valB = jurorData.napolitana === "B" ? 1 : 0;
+      hasData = valA > 0 || valB > 0;
+      detailUnit = "voto";
+    } else if (categoryKey === "popurri") {
       // Popurrí Alternativo: votos por mayoría de ítems (11 ítems)
       valA = (jurorData.popurri || []).filter((v) => v === "A").length;
       valB = (jurorData.popurri || []).filter((v) => v === "B").length;
@@ -311,10 +316,6 @@ const AdminView = ({ db, onBack, onReset, config }) => {
 
     return { label, winner, detail };
   };
-
-  const anyCategoryFullyVoted = useMemo(() => {
-    return ["juegos", "napolitana", "popurri", "mascota", "ritmo1", "ritmo2", "ritmo3", "videoclip"].some(key => isCategoryFullyVoted(db, jurors, key));
-  }, [db, jurors]);
 
 
   return (
@@ -436,15 +437,15 @@ const AdminView = ({ db, onBack, onReset, config }) => {
         <>
           {/* Visual Cards Grid - Vertical List */}
           <div className="row justify-content-center mb-5">
-            <div className="col-lg-6 col-md-8">
+            <div className="col-12">
               {(currentData?.breakdown?.individualGames || []).map((win, i) => {
                 const gameVoted = isCategoryFullyVoted(db, jurors, `juego-${i}`);
                 return (
                   <div className="mb-4" key={`card-juego-${i}`}>
                     <CategoryWinnerCard
                       label={`Juego #${i + 1}`}
-                      a={gameVoted ? (win === "A" ? 6 : 0) : 0}
-                      b={gameVoted ? (win === "B" ? 6 : 0) : 0}
+                      a={gameVoted ? (win === "A" ? 6 : win === "EMPATE" ? 3 : 0) : 0}
+                      b={gameVoted ? (win === "B" ? 6 : win === "EMPATE" ? 3 : 0) : 0}
                       teamA={teamA}
                       teamB={teamB}
                       hasData={gameVoted}
@@ -699,6 +700,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                         { label: "Popurrí Seleccionado Ritmo 2", key: "ritmo2" },
                         { label: "Popurrí Seleccionado Ritmo 3", key: "ritmo3" },
                         { label: "Video Clip", key: "videoclip" },
+                        { label: "🎨 Napolitana", key: "napolitana" },
                       ].map((row, i) => (
                         <tr key={i}>
                           <td className="text-start ps-4 opacity-75">
@@ -748,7 +750,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
             {jurorProgressData.map((jp) => {
               const submitted = jp.progress.submitted;
               const percent = jp.progress.pct;
-              const result = rData?.jurorResults?.find(
+              const result = currentData?.jurorResults?.find(
                 (r) => r.id === jp.id,
               )?.result;
               return (

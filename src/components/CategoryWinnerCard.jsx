@@ -5,64 +5,90 @@ const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData, honorOnly }) =
   const winner = !hasRealResult ? null : a === b ? "EMPATE" : a > b ? teamA : teamB;
   return (
     <div
-      className="card border-0 shadow-lg text-white mb-5"
+      className="card border-0 shadow-lg text-white w-100"
       style={{
-        background: "linear-gradient(135deg, #2c3e50, #000000)",
-        borderRadius: "20px",
+        background: "linear-gradient(135deg, #1e293b, #0f172a)",
+        border: "1px solid rgba(255, 255, 255, 0.12)",
+        borderRadius: "24px",
         overflow: "hidden",
-        minHeight: "180px",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+        marginBottom: "300px",
       }}
     >
-      <div className="card-body p-3 d-flex flex-column justify-content-between text-center">
+      <div className="card-body p-4 d-flex flex-column justify-content-between text-center">
         <div
-          className="text-uppercase opacity-75 fw-bold mb-3 mt-2"
+          className="text-uppercase fw-black mb-3 mt-1"
           style={{
-            fontSize: "clamp(1rem, 1.5vw, 1.4rem)",
-            letterSpacing: "2px",
+            fontSize: "clamp(1.5rem, 2.8vw, 2.3rem)",
+            fontWeight: "900",
+            letterSpacing: "3px",
+            color: "#ffffff",
+            textShadow: "0 2px 10px rgba(0,0,0,0.5)",
           }}
         >
           {label}
         </div>
 
-        <div className="d-flex align-items-center justify-content-around my-3">
-          <div className="text-center" style={{ flex: 1 }}>
+        <div className="d-flex align-items-center justify-content-around my-4">
+          <div className="text-center px-2" style={{ flex: 1 }}>
             <div
-              className="m-0 fw-bold"
+              className="m-0 fw-black"
               style={{
-                color: "#ff9800",
-                fontSize: "clamp(3rem, 5vw, 4.5rem)",
+                color: "#ffab40",
+                fontSize: "clamp(3.8rem, 7.5vw, 6.5rem)",
+                fontWeight: "900",
                 lineHeight: "1",
+                textShadow: "0 4px 20px rgba(255, 171, 64, 0.4)",
               }}
             >
               {honorOnly ? (a > b ? "1" : "0") : a}
             </div>
             <div
-              className="opacity-75 fw-bold mt-2 px-2"
-              style={{ fontSize: "clamp(0.85rem, 1vw, 1.1rem)" }}
+              className="fw-bold mt-3 px-2 text-uppercase"
+              style={{
+                fontSize: "clamp(1.2rem, 2.2vw, 1.8rem)",
+                fontWeight: "800",
+                color: "#f1f5f9",
+                letterSpacing: "1px",
+              }}
             >
               {teamA}
             </div>
           </div>
+
           <div
-            className="opacity-25 fw-bold mx-2"
-            style={{ fontSize: "clamp(1.5rem, 2vw, 2rem)" }}
+            className="fw-black mx-3"
+            style={{
+              fontSize: "clamp(2rem, 3.5vw, 3rem)",
+              fontWeight: "900",
+              color: "rgba(255, 255, 255, 0.3)",
+              fontStyle: "italic",
+            }}
           >
             VS
           </div>
-          <div className="text-center" style={{ flex: 1 }}>
+
+          <div className="text-center px-2" style={{ flex: 1 }}>
             <div
-              className="m-0 fw-bold"
+              className="m-0 fw-black"
               style={{
-                color: "#ff9800",
-                fontSize: "clamp(3rem, 5vw, 4.5rem)",
+                color: "#ffab40",
+                fontSize: "clamp(3.8rem, 7.5vw, 6.5rem)",
+                fontWeight: "900",
                 lineHeight: "1",
+                textShadow: "0 4px 20px rgba(255, 171, 64, 0.4)",
               }}
             >
               {honorOnly ? (b > a ? "1" : "0") : b}
             </div>
             <div
-              className="opacity-75 fw-bold mt-2 px-2"
-              style={{ fontSize: "clamp(0.85rem, 1vw, 1.1rem)" }}
+              className="fw-bold mt-3 px-2 text-uppercase"
+              style={{
+                fontSize: "clamp(1.2rem, 2.2vw, 1.8rem)",
+                fontWeight: "800",
+                color: "#f1f5f9",
+                letterSpacing: "1px",
+              }}
             >
               {teamB}
             </div>
@@ -72,31 +98,35 @@ const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData, honorOnly }) =
         <div className="mt-3 mb-2 px-2">
           {winner ? (
             <div
-              className="py-2 px-3 rounded-pill shadow-sm d-inline-block w-100"
+              className="py-3 px-4 rounded-pill shadow-lg d-inline-block w-100 text-uppercase"
               style={{
-                background: honorOnly
+                background: winner === "EMPATE"
                   ? "linear-gradient(to right, #f39c12, #f1c40f)"
-                  : "linear-gradient(to right, #ba8b02, #ffd700)",
-                color: "#000",
-                fontSize: "clamp(0.9rem, 1.2vw, 1.2rem)",
+                  : honorOnly
+                    ? "linear-gradient(to right, #f39c12, #f1c40f)"
+                    : "linear-gradient(to right, #f59e0b, #fbbf24)",
+                color: "#000000",
+                fontSize: "clamp(1.3rem, 2.2vw, 1.8rem)",
                 fontWeight: "900",
+                letterSpacing: "1.5px",
+                boxShadow: "0 8px 25px rgba(245, 158, 11, 0.4)",
               }}
             >
-              {honorOnly ? "🎨" : "🏆"} {winner === "EMPATE" ? "EMPATE" : `GANADOR: ${winner}`}
+              {honorOnly ? "🎨" : "🏆"} {winner === "EMPATE" ? "EMPATE EN CATEGORÍA" : `GANADOR: ${winner}`}
             </div>
           ) : (
             <div
-              className="py-2 px-3 rounded-pill d-inline-block w-100"
+              className="py-3 px-4 rounded-pill d-inline-block w-100"
               style={{
-                fontSize: "clamp(0.9rem, 1.2vw, 1.2rem)",
-                background: "rgba(255,255,255,0.07)",
+                fontSize: "clamp(1.1rem, 1.8vw, 1.5rem)",
+                background: "rgba(255,255,255,0.06)",
                 border: "1px solid rgba(255,255,255,0.15)",
-                color: "rgba(255,255,255,0.5)",
-                fontWeight: "600",
+                color: "rgba(255,255,255,0.6)",
+                fontWeight: "700",
                 letterSpacing: "1px",
               }}
             >
-              ⏳ Esperando jurados...
+              ⏳ Esperando que todos los jurados envíen sus votos...
             </div>
           )}
         </div>

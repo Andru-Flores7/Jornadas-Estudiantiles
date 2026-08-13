@@ -363,7 +363,7 @@ const JurorView = ({
                             l: "Adaptación al tiempo musical",
                           },
                           { k: "uso del espacio", l: "Uso del espacio" },
-                          { k: "trabajo en equipo", l: "Trabajo en equipo" },
+                          { k: "impacto visual", l: "Impacto visual" },
                           { k: "carisma", l: "Carisma" },
                           { k: "escenografia", l: "Escenografía" },
                         ].map((c) => (

@@ -1,7 +1,7 @@
 
 const CategoryWinnerCard = ({ label, a, b, teamA, teamB, hasData, honorOnly }) => {
-  // No mostrar ganador si: no hay datos, o ambos puntajes son 0 (no hubo ganador en esta categoría)
-  const hasRealResult = hasData && (a > 0 || b > 0);
+  // No mostrar ganador si no hay datos de todos los jurados
+  const hasRealResult = hasData;
   const winner = !hasRealResult ? null : a === b ? "EMPATE" : a > b ? teamA : teamB;
   return (
     <div

@@ -244,16 +244,16 @@ export const isJurorCategoryComplete = (data, category) => {
     return r3A === 6 && r3B === 6;
   }
   if (category === "videoclip") {
-    const vidA = Object.values(data.videoclip?.A || {}).filter((v) => v !== "" && v !== null && v !== undefined).length;
-    const vidB = Object.values(data.videoclip?.B || {}).filter((v) => v !== "" && v !== null && v !== undefined).length;
-    return vidA === 7 && vidB === 7;
+    // El check de submitted ya se realizó arriba (línea 212).
+    // Si el jurado envió su planilla, se considera que votó en videoclip.
+    return true;
   }
 
   return false;
 };
 
 export const isCategoryFullyVoted = (db, jurors, category) => {
-  if (!db || !jurors || jurors.length === 0) return false;
+  if (!db || !jurors || jurors.length < 4) return false;
   return jurors.every((j) => {
     const jurorData = db[j.id];
     if (!jurorData || !jurorData.submitted) return false;

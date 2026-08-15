@@ -595,7 +595,7 @@ const AdminView = ({ db, onBack, onReset, config }) => {
                           votesB = jurors.filter((j) => db[j.id]?.napolitana === "B").length;
                         }
 
-                        const hasRealVotes = voted && (votesA > 0 || votesB > 0);
+                        const hasRealVotes = voted;
                         const rowWinner = !hasRealVotes
                           ? null
                           : votesA === votesB

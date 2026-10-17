@@ -1,4 +1,4 @@
-import geekLogo from '../assets/GEEK STORE LOGO.png';
+import geekLogo from '../../assets/GEEK STORE LOGO.png';
 
 const GlobalFooter = () => {
   return (

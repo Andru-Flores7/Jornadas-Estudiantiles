@@ -35,10 +35,27 @@ import { createInitialJurorState, normalizePayload, initialConfig } from './util
 // Lazy-load las vistas pesadas → chunks separados para carga inicial más rápida
 const JurorView = lazy(() => import('./components/juror/JurorView'));
 const AdminView = lazy(() => import('./components/admin/AdminView'));
+const AdminLogin = lazy(() => import('./components/admin/AdminLogin'));
 
 const App = () => {
   const [role, setRole] = useState(null);
   const [jurorData, setJurorData] = useState(createInitialJurorState());
+  const [adminSession, setAdminSession] = useState(null);
+
+  // Escuchar cambios de sesión y verificar sesión activa inicial
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAdminSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAdminSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Ref estable del rol para que los hooks no se re-creen al cambiar el rol
   const roleRef = useRef(role);
@@ -68,6 +85,13 @@ const App = () => {
         .single();
       setJurorData(data ? normalizePayload(data.payload) : createInitialJurorState());
     }
+  }, []);
+
+  // ── Cierre de sesión de Admin ───────────────────────────────────────────
+  const handleAdminLogout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setAdminSession(null);
+    setRole(null);
   }, []);
 
   // ── Actualización de datos del jurado (con sync debounced) ───────────────
@@ -112,7 +136,24 @@ const App = () => {
   if (!role) {
     content = <RoleSelection onSelect={handleSelectRole} config={config} />;
   } else if (role === 'admin') {
-    content = <AdminView db={db} onBack={() => setRole(null)} onReset={handleReset} config={config} />;
+    if (!adminSession) {
+      content = (
+        <AdminLogin
+          onLoginSuccess={(session) => setAdminSession(session)}
+          onCancel={() => setRole(null)}
+        />
+      );
+    } else {
+      content = (
+        <AdminView
+          db={db}
+          onBack={() => setRole(null)}
+          onReset={handleReset}
+          config={config}
+          onLogout={handleAdminLogout}
+        />
+      );
+    }
   } else {
     content = (
       <JurorView

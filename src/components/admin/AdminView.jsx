@@ -24,7 +24,7 @@ import { generatePDF } from './generatePDF';
 
 const CATEGORIES = ['juegos', 'napolitana', 'popurri', 'mascota', 'ritmo1', 'ritmo2', 'ritmo3', 'videoclip'];
 
-const AdminView = ({ db, onBack, onReset, config }) => {
+const AdminView = ({ db, onBack, onReset, config, onLogout }) => {
   const teamA = config.teamA;
   const teamB = config.teamB;
 
@@ -84,9 +84,16 @@ const AdminView = ({ db, onBack, onReset, config }) => {
     <div className="container py-5">
       {/* Barra de acciones */}
       <div className="d-flex justify-content-between mb-4">
-        <button className="btn btn-outline-secondary btn-sm" onClick={onBack}>
-          Volver
-        </button>
+        <div className="d-flex gap-2">
+          <button className="btn btn-outline-secondary btn-sm" onClick={onBack}>
+            ← Volver al inicio
+          </button>
+          {onLogout && (
+            <button className="btn btn-outline-danger btn-sm" onClick={onLogout}>
+              🔒 Cerrar Sesión
+            </button>
+          )}
+        </div>
         <div className="d-flex gap-2">
           <button className="btn btn-info btn-sm text-white fw-bold px-3" onClick={handleGeneratePDF}>
             📥 Descargar Comprobante PDF
